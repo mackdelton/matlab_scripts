@@ -1,11 +1,15 @@
 clear all; close all;clc
 
 betaVal = 0;
-%**********SETTINGS FOR DATA COLLECTION*****************
+%**********OPTIONS FOR DATA COLLECTION*****************
 N = 20
-iter = [50 100 150 200]; %Number of iterations ("t")
+iter = [500 1000 2000 5000]; %Number of iterations ("t")
 v = [0 1 2]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
       %2 - Semi-intelligent, 3 - Parker test
+kk = 1; %Minimum number of successes required to be considered successful
+        %comms
+noN = 1; %Total number of "trials" or attempts at communicating between 
+         %agents
 %**********SETTINGS FOR DATA COLLECTION*****************
 hh = waitbar(0,'Please wait...running through iterations');
 for iter_i = iter
@@ -32,7 +36,7 @@ for iter_i = iter
         %[histA aId] = scheduleCalc(betaVal,locsA,locsB,[v iter],maxR);
 
         %Use for single agent Bernoulli version
-        [histA aId aB gRef distMax] = scheduleCalc_bern(betaVal,locsA,locsB,[ii iter_i],maxR);
+        [histA aId aB gRef distMax] = scheduleCalc_bern(betaVal,locsA,locsB,[ii iter_i kk noN],maxR);
 
         %Use for single agent Bernoulli version and binomial-defined rewards
         %[histA aId aB gRef] = scheduleCalc_bernbino(betaVal,locsA,locsB,[v iter],maxR);
@@ -40,7 +44,7 @@ for iter_i = iter
         %Plot results for visual
         %eval(['save(''bernoulliGittens_' num2str(N) '_' ...
         %    num2str(iter) '.mat'',''histA'',''aId'',''aB'',''locsA'',''locsB'',''gRef'');']);
-        eval(['save(''bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '.mat'');']);
+        eval(['save(''./101916b_data/bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '_101916b.mat'');']);
         waitbar(ii/length(v));
     end
     close(hhh)

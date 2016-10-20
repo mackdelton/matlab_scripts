@@ -16,8 +16,10 @@ function [bestArmHistory, agentId, agentB, c_r, distTot] = scheduleCalc_bern(bet
 % beta: A n x 1 vector of discount values to be tested for each solution
 % armLocA: Specifies the location of each arm within Agent A's scope
 % armLocB: Specifies the location of each arm within Agent B's scope
-% opts: b x 1 vector containing the options with which a solution should
-% be tested [Solution type, length of run], where Solution type can be:
+% opts: 4 x 1 vector containing the options with which a solution should
+% be tested [Solution type, length of run, minimum number of successes,
+% total number of communication "trials" considered].
+% Solution type can be:
 % (0 - Varaiya, 1 - Baseline(random), 2 - Parker, 3 - Sonin, 3 - Katehakis)
 % mR: Maximum possible distance between agents
 % OUTPUTS
@@ -64,7 +66,7 @@ agentB = armLocB(1,:); %Freeze location of AgentB
 agentId = zeros(1,opts(2)); %Record agentA arm selection
 
 %History of all arms selected
-bestArmHistory = zeros(opts(2),3); %[X-pos Y-pos (Separation Dist)]
+bestArmHistory = zeros(opts(2),4); %[X-pos Y-pos (Separation Dist) success]
 
 %Calculate distances between potential AgentA locations and expected
 %location of AgentB
@@ -110,7 +112,8 @@ switch(opts(1))
                     vA(a) = max(gittins_index_by_varaiya(beta,rew,pA));
                     
                     %Scale by distance from current AgentA position
-                    vA(a) = vA(a) * pdist([agentA;armLocA(a,:)],'euclidean');
+                    %101816, LTP: 
+                    vA(a) = vA(a) * pdist([agentA;armLocA(a,:)],'euclidean')/max(pdist(armLocA));
                 end
                 agentAold = agentA;
                 % Look for closest point
@@ -122,8 +125,13 @@ switch(opts(1))
                 end
                 distTot = distTot + pdist([agentAold;agentA]);
                 agentId(t) = find(bestV==1);
-                %Save [x-best y-best separation-best]
-                bestArmHistory(t,:) = [agentA r(bestV)];
+                                
+                %Evaluate success or failure of decision
+                mark = envReward(rA(agentId(t)),opts(3),opts(4));
+                
+                %Save [x-best y-best separation-best success/failure]
+                bestArmHistory(t,:) = [agentA r(bestV) mark];
+                
                 %Update waitbar
                 waitbar(t/opts(2));
         end
@@ -139,8 +147,12 @@ switch(opts(1))
                 agentA = armLocA(ranSel,:); %Move agentA to new arm location
                 distTot = distTot + pdist([agentAold;agentA]);
                 agentId(t) = ranSel;
+                
+                %Evaluate success or failure of decision
+                mark = envReward(rA(agentId(t)),opts(3),opts(4));
+                
                 %Save [x-best y-best separation-best]
-                bestArmHistory(t,:) = [agentA r(ranSel)];
+                bestArmHistory(t,:) = [agentA r(ranSel) mark];
                 %Update waitbar
                 waitbar(t/opts(2));
         end
@@ -200,17 +212,25 @@ switch(opts(1))
                         %as is.
                         agentA = armLocA(bestV,:);
                         agentId(t) = find(bestV==1);                        
-                        %Save [x-best y-best separation-best]
-                        bestArmHistory(t,:) = [agentA r(bestV)];
+                        %Save [x-best y-best separation-best mark(initialized with placeholder as 0)]
+                        bestArmHistory(t,:) = [agentA r(bestV) 0];
                     else if(t==1)
                         agentId(t) = initAgentId;
                         else
                             agentId(t) = agentId(t-1);
                         end
-                        bestArmHistory(t,:) = [agentA r(agentId(t))];
+                        %Save [x-best y-best separation-best mark(initialized with placeholder as 0)]
+                        bestArmHistory(t,:) = [agentA r(agentId(t)) 0];
                     end
                     distTot = distTot + pdist([agentAold;agentA]);
                 %%%end
+                
+                %Evaluate success or failure of decision
+                mark = envReward(rA(agentId(t)),opts(3),opts(4));
+                
+                %Update environment output
+                bestArmHistory(t,4) = mark;
+                
                 %Update waitbar
                 waitbar(t/opts(2));
         end 
