@@ -21,10 +21,10 @@ for iter_i = iter
         maxSpace = 20; %Max space of navigation area (nmi)
         maxR = sqrt((2*maxSpace)^2+maxSpace^2); %Defines the max distance between two agents
 
-        locsA = maxSpace*rand(N,2); %Define N random locations, set at 20nmi x 20nmi max
+        locsA = maxSpace*randn(N,2); %Define N random locations, set at 20nmi x 20nmi max
         locsA = [(locsA(:,1) - maxSpace) (locsA(:,2) - maxSpace/2)];
-
-        locsB = maxSpace*rand(N,2); %Define N random locations, set at 20nmi x 20nmi max
+        %This is the new branch
+        locsB = maxSpace*randn(N,2); %Define N random locations, set at 20nmi x 20nmi max
         locsB = [locsB(:,1) (locsB(:,2) - maxSpace/2)];
 
         %figure;plot(locsA(:,1),locsA(:,2),'r*');hold on;plot(locsB(:,1),locsB(:,2),'b*')
