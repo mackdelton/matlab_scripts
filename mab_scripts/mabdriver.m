@@ -44,7 +44,7 @@ for iter_i = iter
         %Plot results for visual
         %eval(['save(''bernoulliGittens_' num2str(N) '_' ...
         %    num2str(iter) '.mat'',''histA'',''aId'',''aB'',''locsA'',''locsB'',''gRef'');']);
-        eval(['save(''./101916b_data/bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '_101916b.mat'');']);
+        eval(['save(''./tempdata/bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '.mat'');']);
         waitbar(ii/length(v));
     end
     close(hhh)

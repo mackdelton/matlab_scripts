@@ -20,7 +20,7 @@ analysisOpt = 1;
 
 for ii = v
     for iter_i = iter   
-         eval(['load bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '_101916b.mat;']); 
+         eval(['load ./tempdata/bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '.mat;']); 
          switch(analysisOpt)
             case {0} %Produce graphics highlighting how the arm most often selected
                      %exists at a range corresponding to a value on the
