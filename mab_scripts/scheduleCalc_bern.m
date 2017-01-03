@@ -23,8 +23,10 @@ function [bestArmHistory, agentId, agentB, c_r, distTot] = scheduleCalc_bern(bet
 % (0 - Varaiya, 1 - Baseline(random), 2 - Parker, 3 - Sonin, 3 - Katehakis)
 % mR: Maximum possible distance between agents
 % OUTPUTS
-% bestArmHistory: Physical locations of the best arm selection at each time
-% step, the separation distance at which that occurs.
+% bestArmHistory: A Nx4 vector of information representing a) the physical 
+% locations of the best arm selection, [x,y], b) the separation distance at
+% which that occurs, and c) the success/failure of the transmission at that
+% location. N represents the total time steps/iterations.
 % agentId: The id of the best arm selection at each time step.
 % agentB: Send back the location of agentB (for now, since all
 % agentA locations will be determined relative to a stationary AgentB).
@@ -32,10 +34,10 @@ function [bestArmHistory, agentId, agentB, c_r, distTot] = scheduleCalc_bern(bet
 % distTot: a 1x1 value representing the total distance traveled throughout
 % all iterations.
 
-%rng(opts(2)); %Set seed value for reproduceability
+rng(opts(2)); %Set seed value for reproduceability
 load socs.mat %Load SoC options
 %Calculate derivative of SoC
-c = ss_est_gamma;
+c = ss_est_exp;
 xx = linspace(0,mR,length(c));
 %dc = diff(c)./diff(xx);dc = dc/max(dc); %Unused (artifact from previous idea for implementation)
 %d2c = diff(dc)./diff(xx(1:end-1)); %Unused (artifact from previous idea for implementation)
@@ -80,6 +82,7 @@ switch(opts(1))
         initAgentId = ceil(armNumA*rand);
         agentA = armLocA(initAgentId,:); %Initialize current location of Agent A
         for t = 1:opts(2)
+            bestV = 0; %Initialize bestV
                 %Determine AgentA's next location for reception
                 for a = 1:armNumA
                     %dcdr = abs(interp1(xx(1:end-1),dc,r,'linear')); %Use this value to define the state transition matrix
@@ -118,19 +121,28 @@ switch(opts(1))
                 agentAold = agentA;
                 % Look for closest point
                 if ~isempty(min(vA(vA>0)))
-                    bestV = vA == (min(vA(vA>0))); %Identify closest location
+                    bestV = find(vA == (min(vA(vA>0)))); %Identify closest location
                     %Update current location of Agent A, otherwise, leave
                     %as is.
+                    if length(bestV) > 1
+                        bestV = datasample(bestV,1);
+                    end
                     agentA = armLocA(bestV,:);
+                    agentId(t) = bestV;
+                else %If there is no "best next location" remain at same loc
+                    if (t == 1)
+                        agentId(t) = initAgentId;
+                    else
+                        agentId(t) = agentId(t-1);
+                    end
                 end
                 distTot = distTot + pdist([agentAold;agentA]);
-                agentId(t) = find(bestV==1);
                                 
                 %Evaluate success or failure of decision
                 mark = envReward(rA(agentId(t)),opts(3),opts(4));
                 
                 %Save [x-best y-best separation-best success/failure]
-                bestArmHistory(t,:) = [agentA r(bestV) mark];
+                bestArmHistory(t,:) = [agentA r(agentId(t)) mark];
                 
                 %Update waitbar
                 waitbar(t/opts(2));
@@ -207,29 +219,29 @@ switch(opts(1))
                     %nearest location exists.
                     vA = vA.*distA; %Scale
                     if ((~isempty(min(vA(vA>0)))) || ~(sum(vA)==0))
-                        bestV = vA == (min(vA(vA>0))); %Identify closest location
+                        bestV = find(vA == (min(vA(vA>0)))); %Identify closest location
                         %Update current location of Agent A, otherwise, leave
                         %as is.
+                        if length(bestV) > 1
+                            bestV = datasample(bestV,1);
+                        end
                         agentA = armLocA(bestV,:);
-                        agentId(t) = find(bestV==1);                        
-                        %Save [x-best y-best separation-best mark(initialized with placeholder as 0)]
-                        bestArmHistory(t,:) = [agentA r(bestV) 0];
-                    else if(t==1)
-                        agentId(t) = initAgentId;
+                        agentId(t) = bestV;                       
+                    else %If there is no "best next location" remain at same loc
+                        if(t == 1)
+                            agentId(t) = initAgentId;
                         else
                             agentId(t) = agentId(t-1);
                         end
-                        %Save [x-best y-best separation-best mark(initialized with placeholder as 0)]
-                        bestArmHistory(t,:) = [agentA r(agentId(t)) 0];
                     end
-                    distTot = distTot + pdist([agentAold;agentA]);
+                distTot = distTot + pdist([agentAold;agentA]);
                 %%%end
                 
                 %Evaluate success or failure of decision
                 mark = envReward(rA(agentId(t)),opts(3),opts(4));
                 
-                %Update environment output
-                bestArmHistory(t,4) = mark;
+                %Update environment response output
+                bestArmHistory(t,:) = [agentA r(agentId(t)) mark];
                 
                 %Update waitbar
                 waitbar(t/opts(2));

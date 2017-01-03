@@ -5,7 +5,13 @@
 %BB: Number of trials run
 %C: Arm selection method: 0 - Varaiya, 1 - Baseline(random),
 %2 - Semi-intelligent
+%Run first to create file
+%fid = fopen('statistics_012_rndgrid_exp_11_15.txt','w')
+%fprintf(fid,'Iteration 1 \t Iteration 2 \t Iteration 3 \n');fclose all
 
+clear all
+clc
+close all
 %Determines whether or not the figures generated will be saved to the
 %working directory
 saveFlag = 0;
@@ -13,14 +19,22 @@ saveFlag = 0;
 textS = 14; %Define plot text font size
 N=20; %Number of agents
 %iter = [50 100 150 200]; %Number of iterations ("t")
-iter = [500 1000 2000 5000]; %Number of iterations ("t")
+iter = [100 500 1000]; %Number of iterations ("t")
 v = [0 1 2]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
       %2 - Semi-intelligent
 analysisOpt = 1;
+%Collection of statistics
+statVecMedian = zeros(length(v),length(iter)); %Use to collect median
+statVecMean = zeros(length(v),length(iter)); %Use to collect mean
 
+%Setup writing to file
+%fid = fopen('statistics_012_rndgrid_exp_11_15.txt','a+');
+fid = fopen('bogus.txt','a+');
 for ii = v
-    for iter_i = iter   
-         eval(['load ./tempdata/bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '.mat;']); 
+    fprintf(fid,'%d\t',ii);
+    for iterate_i = 1:3
+         eval(['load ./rndgrid_gamma/tempdata11/bernoulliGittins_' num2str(N) '_' num2str(iter(iterate_i)) '_' num2str(ii) '.mat;']); 
+         iter = [100 500 1000]; %Number of iterations ("t")
          switch(analysisOpt)
             case {0} %Produce graphics highlighting how the arm most often selected
                      %exists at a range corresponding to a value on the
@@ -71,7 +85,7 @@ for ii = v
                 set(LEG,'FontSize',14,'FontWeight','bold');
 
                 if(saveFlag == 1)
-                    eval(['print(matchFig,''matchFig_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) ''',''-dpng'');']);
+                    eval(['print(matchFig,''matchFig_' num2str(N) '_' num2str(iter(iterate_i)) '_' num2str(ii) ''',''-dpng'');']);
                 end
              case{1} %Produce graphics highlighting the arms selected and
                      %how often messages were successfully transmitted.
@@ -83,36 +97,69 @@ for ii = v
                         %Record [no. of successes; no. of failures]
                         ratioTrial = [ratioTrial;[sum(outTruth) (length(outTruth)-sum(outTruth))]];
                     end
-                    figure;bar(ratioTrial,'stacked')
+                    %Record statistics
+                    %Calculate the percentage of successes out of total
+                    %trials
+                    summaryVec = ratioTrial(:,1)./(ratioTrial(:,1)+ratioTrial(:,2));
+                    %Remove cases where there is neither a success or
+                    %failure, i.e., the location was visited.
+                    summaryVec(isnan(summaryVec)) = 0;
+                    %Rows represent method (e.g., MAB, Random, etc.),
+                    %columns represent the number of iterations attempted
+                    statVecMedian(ii+1,iterate_i) = median(summaryVec);
+                    statVecMean(ii+1,iterate_i) = mean(summaryVec);
+                    fprintf(fid,'%3.3f\t',statVecMean(ii+1,iterate_i));
+                    %Output statistics/plots
+                    figure;subplot(1,2,1);bar(ratioTrial,'stacked');xlabel('Candidate Location');
+                    legend('Successes','Failures');
+                    subplot(1,2,2);hist((ratioTrial(:,1)+ratioTrial(:,2))/iter(iterate_i),20);
+                    xlabel('% of Trials');ylabel('No. of locations');
              otherwise
                 disp{'Unknown selection'}
          end
     end
+    fprintf(fid,'\n');
 end
+fprintf(fid,'\n');
+%statVecMedian
+statVecMean
 
-%% Print script for comparing methods (primarily used for data for SMC2016)
-% Used to compare total distance accumulated by each method
-close all;clc;
-N = 20; iter_i = 200;
-ii=0;
-eval(['load bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '_101816.mat;']);
-v0Dist = distMax
+statDiff = [(statVecMean(2,:)-statVecMean(1,:))./statVecMean(1,:);(statVecMean(3,:)-statVecMean(1,:))./statVecMean(1,:)]
 
-ii=1;
-eval(['load bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '_101816.mat;']);
-v1Dist = distMax
+%%
+% Commands for printing .csv output for analysis
+% 1) Load data
+% 2) Customize file name
+% 3) Run
+% Example:
+% load('/home/lparker/matlab_scripts/mab_scripts/meshgrid_gamma/tempdata11/bernoulliGittins_20_100_1.mat')
+% csvwrite('testdata_20_100_1_meshgamma.csv',[aId' histA])
+% csvwrite('testloc_20_100_1_meshgamma.csv',[locsA locsB])
 
-ii=2;
-eval(['load bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '_101816.mat;']);
-v2Dist = distMax
-
-methName = {'Gittins Index','Uniformed Random','Educated Guess'};
-methCmp = figure;
-ax = gca;
-bar([0 1 2],[v0Dist v1Dist v2Dist]);
-%ax.XTickLabel = {methName};
-set(ax,'XTickLabel',methName);
-
-eval(['print(methCmp,''methCmpFig_' num2str(N) '_' num2str(iter) ''',''-dpng'');']);
-
-%% Print script used to validate the usefulness of location selection by an MAB-inspired approach
+%%
+% %% Print script for comparing methods (primarily used for data for SMC2016)
+% % Used to compare total distance accumulated by each method
+% close all;clc;
+% N = 20; iter_i = 200;
+% ii=0;
+% eval(['load bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '_101816.mat;']);
+% v0Dist = distMax
+% 
+% ii=1;
+% eval(['load bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '_101816.mat;']);
+% v1Dist = distMax
+% 
+% ii=2;
+% eval(['load bernoulliGittins_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '_101816.mat;']);
+% v2Dist = distMax
+%  
+% methName = {'Gittins Index','Uniformed Random','Educated Guess'};
+% methCmp = figure;
+% ax = gca;
+% bar([0 1 2],[v0Dist v1Dist v2Dist]);
+% %ax.XTickLabel = {methName};
+% set(ax,'XTickLabel',methName);
+% 
+% eval(['print(methCmp,''methCmpFig_' num2str(N) '_' num2str(iter) ''',''-dpng'');']);
+% 
+% %% Print script used to validate the usefulness of location selection by an MAB-inspired approach
