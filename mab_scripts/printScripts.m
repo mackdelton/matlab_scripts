@@ -127,14 +127,41 @@ statVecMean
 statDiff = [(statVecMean(2,:)-statVecMean(1,:))./statVecMean(1,:);(statVecMean(3,:)-statVecMean(1,:))./statVecMean(1,:)]
 
 %%
-% Commands for printing .csv output for analysis
+% Commands for printing output for all results for all conditions as .csv output for analysis
 % 1) Load data
 % 2) Customize file name
 % 3) Run
 % Example:
-% load('/home/lparker/matlab_scripts/mab_scripts/meshgrid_gamma/tempdata11/bernoulliGittins_20_100_1.mat')
-% csvwrite('testdata_20_100_1_meshgamma.csv',[aId' histA])
-% csvwrite('testloc_20_100_1_meshgamma.csv',[locsA locsB])
+N=[20 100]; %Number of agents
+%iter = [50 100 150 200]; %Number of iterations ("t")
+iter = [100 500 1000]; %Number of iterations ("t")
+v = [0 1 2]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
+      %2 - Semi-intelligent
+bern = [11 12 13 14 15 22 23 24 25 33 34 35 44 45 55];
+h = waitbar(0, 'loading and writing data, WAIT!');
+for ii = v
+    for iterate_i = 1:3
+        for b = 1:length(bern) %For bernoulli condition of success
+            for n = N
+                load(strcat({'/home/lparker/matlab_scripts/mab_scripts/meshgrid_gamma/tempdata',...
+                     num2str(bern(b)),...
+                    '/bernoulliGittins_'
+                    num2str(n), '_', num2str(iterate_i(iter)), '_', num2str(ii), '.mat'}));
+                    ob = ones(length(histA),1); %Generic 1's vector
+                    csvwrite(strcat({'testdata_',...
+                        num2str(n), '_', num2str(iterate_i(iter)), '_',...
+                        num2str(ii), '_', 'meshgamma.csv'}),...
+                        [aId' histA n*ob, ii*ob, iterate_i(iter)*ob, b*ob]);
+                    csvwrite(strcat({'testloc_',...
+                        num2str(n), '_', num2str(iterate_i(iter)), '_',...
+                        num2str(ii), '_', 'meshgamma.csv'}),[locsA locsB])
+            end
+        end
+        clear all %Clear previous data
+    end
+    waitbar(ii/length(v),h);
+end
+close(h)
 
 %%
 % %% Print script for comparing methods (primarily used for data for SMC2016)
