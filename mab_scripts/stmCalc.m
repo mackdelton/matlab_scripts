@@ -22,9 +22,13 @@ N = 100; %Size of sample space
 stmOut = zeros(2,2); %Initialize state-transition matrix
 a = [0 0]; %Counter of state transitions
 
+% 10FEB17, lparker: Removed to eliminate confusion. State transition matrix
+% will take all of SoC into account.
 %Identify the range of separation distances for locStart
-rRange = [min(pdist([locStart;locEnd])) max(pdist([locStart;locEnd]))];
-subIndCofr = (cofr(1,:) >= rRange(1)) & (cofr(1,:) <= rRange(2));
+rRange = pdist([locStart;locEnd]);
+rRange = rRange(1:length(locEnd));
+subRange = [min(rRange) max(rRange)];
+subIndCofr = (cofr(1,:) >= subRange(1)) & (cofr(1,:) <= subRange(2));
 cofr = cofr(:,subIndCofr); %Redefine the range of C(r) values that should be considered for the given arm
 
 for w = 1:2
@@ -36,37 +40,42 @@ for w = 1:2
     else %Randomly select an r value that determines a state of s1
         sInd = cofr(2,:) >= gamma;
     end
-    
-    stateCofr = cofr(:,sInd);
-    rRef = datasample(stateCofr(1,:),1);
-    for n = 1:N
-        %Select delta r, according to uniform distribution and scaled to
-        %the range of r values provided in cofr
-        deltaR = (max(cofr(1,:))*rand)-rRef;
-        %THIS IS A PLACEHOLDER FOR TESTING THE SELECTION OF DELTAR ACCORDING TO
-        %A NORMAL DISTRIBUTION WHERE THE MEAN IS THE SEPARATION THAT ACHIEVES
-        %THE MAXIMUM PROBABILITY.
-        % deltaR = (max(rVec)*randn)-rRef;
-        %
-        %    
-        %Define C(r+deltaR)
-        newC = interp1(cofr(1,:),cofr(2,:),(rRef+deltaR),'linear');
-        
-        if w == 1
-            %Evaluate new C(r) value for which state it is in
-            if newC < gamma %NO state change from s0
-                a(w) = a(w) + 1;
-            end %else, a change DID occur to s1
-        else %w == 2
-            %Evaluate new C(r) value for which state it is in
-            if newC > gamma %NO state change from s1
-                a(w) = a(w) + 1;
-            end %else, a change DID occur to s0
+    if (sum(sInd) ~= 0)
+        stateCofr = cofr(:,sInd);
+        rRef = datasample(stateCofr(1,:),1);
+        for n = 1:N
+            %Select delta r, according to uniform distribution and scaled to
+            %the range of r values provided in cofr
+            deltaR = (max(cofr(1,:))*rand)-rRef;
+            %THIS IS A PLACEHOLDER FOR TESTING THE SELECTION OF DELTAR ACCORDING TO
+            %A NORMAL DISTRIBUTION WHERE THE MEAN IS THE SEPARATION THAT ACHIEVES
+            %THE MAXIMUM PROBABILITY.
+            % deltaR = (max(rVec)*randn)-rRef;
+            %
+            %    
+            %Define C(r+deltaR)
+            newC = interp1(cofr(1,:),cofr(2,:),(rRef+deltaR),'linear');
+
+            if w == 1
+                %Evaluate new C(r) value for which state it is in
+                if newC < gamma %NO state change from s0
+                    a(w) = a(w) + 1;
+                end %else, a change DID occur to s1
+            else %w == 2
+                %Evaluate new C(r) value for which state it is in
+                if newC > gamma %NO state change from s1
+                    a(w) = a(w) + 1;
+                end %else, a change DID occur to s0
+            end
         end
+    else
+        if w == 1    % If searching for candidate s0 states, but none exist
+            a(2) = N;% then s1 is absolute
+        else
+            a(1) = N;% If searching for candidate s1 states, but none exist
+        end          % then s0 is absolute
     end
-stmOut = [a(1), (N-a(1)); ...
-        (N-a(2)), a(2)]/N;
-    
 end
-        
+stmOut = [a(1), (N-a(1)); ...
+        (N-a(2)), a(2)]/N;        
     

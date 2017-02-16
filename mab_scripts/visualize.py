@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 #Attempt to read in and visualize MAB data
-data = pd.read_csv("./testdata_100_100_2_rndgamma.csv", header=None,names=['id','selx','sely','rng','out'])
-locs = pd.read_csv("./testloc_100_100_2_rndgamma.csv", header=None, names=['alocx','alocy','blocx','blocy'])
+data = pd.read_csv("./legacy_csv/testdata_20_100_2_rndgamma.csv", header=None,names=['id','selx','sely','rng','out'])
+locs = pd.read_csv("./legacy_csv/testloc_20_100_2_rndgamma.csv", header=None, names=['alocx','alocy','blocx','blocy'])
 
 N=len(locs) #Number of locations visited
 tot = len(data) #Number of trials

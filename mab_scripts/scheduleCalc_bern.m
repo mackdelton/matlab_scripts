@@ -1,4 +1,4 @@
-function [bestArmHistory, agentId, agentB, c_r, distTot] = scheduleCalc_bern(beta,armLocA,armLocB,opts,mR)
+function [bestArmHistory, agentId, agentB, c_r, distTot] = scheduleCalc_bern(beta,armLocA,armLocB,opts,mR,pType)
 %Test script for schedule algorithm based on Weber Tutorial and L. Gregorio
 %This script is modified to account/test for the impact of alternating
 %arm/location selection to mimic TDMA communication protocol.
@@ -22,6 +22,8 @@ function [bestArmHistory, agentId, agentB, c_r, distTot] = scheduleCalc_bern(bet
 % Solution type can be:
 % (0 - Varaiya, 1 - Baseline(random), 2 - Parker, 3 - Sonin, 3 - Katehakis)
 % mR: Maximum possible distance between agents
+% pType: Success of Communication curve type (exponential or gamma) (as of
+% 10FEB17.
 % OUTPUTS
 % bestArmHistory: A Nx4 vector of information representing a) the physical 
 % locations of the best arm selection, [x,y], b) the separation distance at
@@ -34,10 +36,16 @@ function [bestArmHistory, agentId, agentB, c_r, distTot] = scheduleCalc_bern(bet
 % distTot: a 1x1 value representing the total distance traveled throughout
 % all iterations.
 
-rng(opts(2)); %Set seed value for reproduceability
+rng('default'); %Set seed value for reproduceability
 load socs.mat %Load SoC options
 %Calculate derivative of SoC
-c = ss_est_exp;
+if pType == 0
+    c = ss_est_gamma;
+else if pType == 1
+        c = ss_est_exp;
+    end
+end
+
 xx = linspace(0,mR,length(c));
 %dc = diff(c)./diff(xx);dc = dc/max(dc); %Unused (artifact from previous idea for implementation)
 %d2c = diff(dc)./diff(xx(1:end-1)); %Unused (artifact from previous idea for implementation)
@@ -83,69 +91,69 @@ switch(opts(1))
         agentA = armLocA(initAgentId,:); %Initialize current location of Agent A
         for t = 1:opts(2)
             bestV = 0; %Initialize bestV
-                %Determine AgentA's next location for reception
-                for a = 1:armNumA
-                    %dcdr = abs(interp1(xx(1:end-1),dc,r,'linear')); %Use this value to define the state transition matrix
+            %Determine AgentA's next location for reception
+            for a = 1:armNumA
+                %dcdr = abs(interp1(xx(1:end-1),dc,r,'linear')); %Use this value to define the state transition matrix
 
-                    %Define 2-state State Transition Matrix (STM) for Varaiya solution
-                    % s0-Poor/no communication (below threshold)
-                    % s1-Good/yes communication (above threshold)
-                    % NOTE: Threshold does not have to be defined.
-                    % (10/07/16, LTP: I have no idea why I said the
-                    % threshold doesn't have to be defined)
-                    %Unused, (artifact from previous idea for implementation)
-                    %Thought that I would use the derivative of the C(r) to
-                    %define the STM, but did not take that route.
-                    %pA = [(1-dcdr) dcdr;dcdr (1-dcdr)];
-                    pA = stmCalc(agentA, armLocB, [xx;c], gThresh);
-                    %rBias = (pdist([agentB;armLocA(a,:)],'euclidean')/mR);
-                    
-                    %LTP, 03/27/16: Attempt at implementing Bernoulli-like
-                    %reward system
-                    %10/7/16, LTP: Potentially error prone way of
-                    %determining rewards. May have just been a way to
-                    %generate variety in definition of reward system.
-                    if ((rand(1) < rA(a)) && (rand(1) > gThresh))
-                        rew = [0;1];
-                    else
-                        rew = [0;0];
-                    end
-                    %Identify the location(s) with the max Gittins' Index
-                    %(there may be more than one)
-                    vA(a) = max(gittins_index_by_varaiya(beta,rew,pA));
-                    
-                    %Scale by distance from current AgentA position
-                    %101816, LTP: 
-                    vA(a) = vA(a) * pdist([agentA;armLocA(a,:)],'euclidean')/max(pdist(armLocA));
+                %Define 2-state State Transition Matrix (STM) for Varaiya solution
+                % s0-Poor/no communication (below threshold)
+                % s1-Good/yes communication (above threshold)
+                % NOTE: Threshold does not have to be defined.
+                % (10/07/16, LTP: I have no idea why I said the
+                % threshold doesn't have to be defined)
+                %Unused, (artifact from previous idea for implementation)
+                %Thought that I would use the derivative of the C(r) to
+                %define the STM, but did not take that route.
+                %pA = [(1-dcdr) dcdr;dcdr (1-dcdr)];
+                pA = stmCalc(agentA, armLocB, [xx;c], gThresh);
+                %rBias = (pdist([agentB;armLocA(a,:)],'euclidean')/mR);
+
+                %LTP, 03/27/16: Attempt at implementing Bernoulli-like
+                %reward system
+                %10/7/16, LTP: Potentially error prone way of
+                %determining rewards. May have just been a way to
+                %generate variety in definition of reward system.
+                if ((rand(1) < rA(a)) && (rand(1) > gThresh))
+                    rew = [0;1];
+                else
+                    rew = [0;0];
                 end
-                agentAold = agentA;
-                % Look for closest point
-                if ~isempty(min(vA(vA>0)))
-                    bestV = find(vA == (min(vA(vA>0)))); %Identify closest location
-                    %Update current location of Agent A, otherwise, leave
-                    %as is.
-                    if length(bestV) > 1
-                        bestV = datasample(bestV,1);
-                    end
-                    agentA = armLocA(bestV,:);
-                    agentId(t) = bestV;
-                else %If there is no "best next location" remain at same loc
-                    if (t == 1)
-                        agentId(t) = initAgentId;
-                    else
-                        agentId(t) = agentId(t-1);
-                    end
+                %Identify the location(s) with the max Gittins' Index
+                %(there may be more than one)
+                vA(a) = max(gittins_index_by_varaiya(beta,rew,pA));
+
+                %Scale by distance from current AgentA position
+                %101816, LTP: 
+                vA(a) = vA(a) * pdist([agentA;armLocA(a,:)],'euclidean')/max(pdist(armLocA));
+            end
+            agentAold = agentA;
+            % Look for closest point
+            if ~isempty(min(vA(vA>0)))
+                bestV = find(vA == (min(vA(vA>0)))); %Identify closest location
+                %Update current location of Agent A, otherwise, leave
+                %as is.
+                if length(bestV) > 1
+                    bestV = datasample(bestV,1);
                 end
-                distTot = distTot + pdist([agentAold;agentA]);
-                                
-                %Evaluate success or failure of decision
-                mark = envReward(rA(agentId(t)),opts(3),opts(4));
-                
-                %Save [x-best y-best separation-best success/failure]
-                bestArmHistory(t,:) = [agentA r(agentId(t)) mark];
-                
-                %Update waitbar
-                waitbar(t/opts(2));
+                agentA = armLocA(bestV,:);
+                agentId(t) = bestV;
+            else %If there is no "best next location" remain at same loc
+                if (t == 1)
+                    agentId(t) = initAgentId;
+                else
+                    agentId(t) = agentId(t-1);
+                end
+            end
+            distTot = distTot + pdist([agentAold;agentA]);
+
+            %Evaluate success or failure of decision
+            mark = envReward(rA(agentId(t)),opts(3),opts(4));
+
+            %Save [x-best y-best separation-best success/failure]
+            bestArmHistory(t,:) = [agentA r(agentId(t)) mark];
+
+            %Update waitbar
+            waitbar(t/opts(2));
         end
         
      case {1} %Uniformed Random (UR)
