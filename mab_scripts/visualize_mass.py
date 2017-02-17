@@ -24,15 +24,16 @@ testdata12FEB17.txt
 '''
 
 #STEP 1: Import test scenario (e.g., 20 randomly distributed candidate locations: "*_rnd20.txt") and specify corresponding parameters
-locs = pd.read_table("./testloc_rnd100.txt", header=None, sep=',', names=['alocx','alocy','blocx','blocy'])
+locs = pd.read_table("./testloc_rnd20.txt", header=None, sep=',', names=['alocx','alocy','blocx','blocy'])
 #Update to match candidate location input file
-N = 100       #Number of candidate locations
+N = 20       #Number of candidate locations
 distT = 0    #Distribution type (Uniform Random - 0, Mesh grid - 1)
 
 #Define parameters of interest
-bC = 1       #Number of Bernoulli trials considered (1 - 1of1, 2 - 1of5, 3 - 1of10)
-nIter = 1000  #Number of iterations (timesteps or duration, 100, 500, or 1000)
-scl = 0.001   #Scale factor for plotting (1 - 100, 0.05 - 500, 0.001 - 1000)
+bC = 2       #Number of Bernoulli trials considered (1 - 1of1, 2 - 1of5, 3 - 1of10)
+soc_type = 1 #Type of Success of Communication curve (0 - Gamma, 1 - Exponential)
+nIter = 100  #Number of iterations (timesteps or duration, 100, 500, or 1000)
+scl = 1   #Scale factor for plotting (1 - 100, 0.05 - 500, 0.001 - 1000)
 soln = 0     #Solution of interest (Gittins Index, GI - 0, Uninformed Random, UR - 1; Educated Guess, EG - 2)
 
 
@@ -45,7 +46,9 @@ dataIn[['id','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type']] 
 
 #STEP 3: Extract relevant dataset pertaining to test scenario
 #Try to concatenate portions of dataIn relevant to the scenario of interest
-dataParse = dataIn.loc[ (dataIn['bernCnt'] == bC) & (dataIn['loc_cnt'] == N) & (dataIn['iter'] == nIter) & (dataIn['distribution'] == distT) & (dataIn['sol_type'] == soln),colT].reset_index(drop=True)
+dataParse = dataIn.loc[ (dataIn['bernCnt'] == bC) & (dataIn['distribution'] == distT) &
+                        (dataIn['soc'] == soc_type) & (dataIn['loc_cnt'] == N) & 
+                        (dataIn['iter'] == nIter) & (dataIn['sol_type'] == soln),colT].reset_index(drop=True)
 
 candLoc = pd.concat([(locs.loc[:,['alocx','alocy']]), pd.DataFrame({'out':[]}).astype(object), pd.DataFrame({'trials':[]}).astype(object), pd.DataFrame({'success':[]}).astype(object)], axis=1)
 
@@ -68,7 +71,7 @@ hdata = hdata[0]
 #bdata = np.arange(0,)
 
 plt.close('all')
-
+print("%% Success: %6.2f \n"% (100*candLoc.loc[:,'success'].astype(int).sum(axis=0)/nIter))
 # Just a figure and one subplot
 f, (ax1, ax2) = plt.subplots(2, 1)
 #font = {'family' : 'normal',
@@ -96,7 +99,7 @@ ax1.set_xlabel('Candidate Receive Locations', multialignment='center', fontsize=
 ax1.set_ylabel('Transmissions', multialignment='center', fontsize=14)
 ax1.set_title('Projected Acomms Success/Failures', fontsize=14, fontweight='bold')
 ax1.set_xticks(ind)
-ax1.set_yticks(np.arange(0, max(candLoc['success']), max(candLoc['success'])/10))
+ax1.set_yticks(np.arange(0, max(candLoc['success']), max(candLoc['success'])/scl))
 #ax1.set_yticks(np.arange(0, 600, 10))
 ax1.legend((p1[0], p2[0]), ('Failure', 'Success'))
 
@@ -114,6 +117,4 @@ ax2.set_xlim(min(locs['alocx'])-2, max(locs['alocx'])+1)
 
 f.savefig('test.png', bbox_inches='tight')  
 f.show()
-
-print("%% Success: %6.2f \n"% (100*candLoc.loc[:,'success'].astype(int).sum(axis=0)/nIter))
 #plt.show()
