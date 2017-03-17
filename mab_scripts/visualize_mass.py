@@ -24,14 +24,14 @@ testdata12FEB17.txt
 '''
 
 #STEP 1: Import test scenario (e.g., 20 randomly distributed candidate locations: "*_rnd20.txt") and specify corresponding parameters
-locs = pd.read_table("./testloc_rnd20.txt", header=None, sep=',', names=['alocx','alocy','blocx','blocy'])
+locs = pd.read_table("./testloc_rnd20_cmp.txt", header=None, sep=',', names=['alocx','alocy','blocx','blocy'])
 #Update to match candidate location input file
-N = 20       #Number of candidate locations
+N = len(locs)       #Number of candidate locations
 distT = 0    #Distribution type (Uniform Random - 0, Mesh grid - 1)
 
 #Define parameters of interest
-bC = 2       #Number of Bernoulli trials considered (1 - 1of1, 2 - 1of5, 3 - 1of10)
-soc_type = 1 #Type of Success of Communication curve (0 - Gamma, 1 - Exponential)
+bC = 1       #Number of Bernoulli trials considered (1 - 1of1, 2 - 1of5, 3 - 1of10)
+soc_type = 0 #Type of Success of Communication curve (0 - Gamma, 1 - Exponential)
 nIter = 100  #Number of iterations (timesteps or duration, 100, 500, or 1000)
 scl = 1   #Scale factor for plotting (1 - 100, 0.05 - 500, 0.001 - 1000)
 soln = 0     #Solution of interest (Gittins Index, GI - 0, Uninformed Random, UR - 1; Educated Guess, EG - 2)
@@ -39,7 +39,7 @@ soln = 0     #Solution of interest (Gittins Index, GI - 0, Uninformed Random, UR
 
 #STEP 2: Read in and visualize MAB data
 colT = ['id','selx','sely','rng','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type'] #Define the column headers for data extraction
-dataIn = pd.read_table("./testdata12FEB17.txt", header=None, sep=',', index_col=False, names=colT)
+dataIn = pd.read_table("./testdata23FEB17_cmp.txt", header=None, sep=',', index_col=False, names=colT)
 #Change data types of specific columns
 dataIn[['selx','sely','rng']] = dataIn[['selx','sely','rng']].astype(float)
 dataIn[['id','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type']] = dataIn[['id','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type']].astype(int)
@@ -71,7 +71,9 @@ hdata = hdata[0]
 #bdata = np.arange(0,)
 
 plt.close('all')
-print("%% Success: %6.2f \n"% (100*candLoc.loc[:,'success'].astype(int).sum(axis=0)/nIter))
+successTotal = candLoc.loc[:,'success'].astype(int).sum(axis=0)
+trialTotal = candLoc.loc[:,'trials'].astype(int).sum(axis=0)
+print("%% Success: %6.2f \n"% (100*successTotal/trialTotal))
 # Just a figure and one subplot
 f, (ax1, ax2) = plt.subplots(2, 1)
 #font = {'family' : 'normal',
@@ -115,6 +117,6 @@ ax2.set_xlim(min(locs['alocx'])-2, max(locs['alocx'])+1)
 #plt.colorbar()
 #plt.clim(0,1)
 
-f.savefig('test.png', bbox_inches='tight')  
+f.savefig('CMP_23FEB17.png', bbox_inches='tight')  
 f.show()
 #plt.show()

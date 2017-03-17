@@ -7,9 +7,9 @@ function [stmOut] = stmCalc(locStart,locEnd,cofr,gamma)
 %Naval Undersea Warfare Center DIVNPT
 
 %INPUTS
-% locStart: Unique arm location (1 x 2 vector) to test relative to changing state impacted
+% locStart: Receive arm locations (n x 2 vector) to test relative to changing state impacted
 % by distance to locEnd.
-% locEnd: Reference locations to locStart
+% locEnd: Transmit arm locations (n x 2 vector)
 % cofr: A n x 2 vector of values measuring the success of communication for
 % a given range of separation values. First row are the SoC values, second
 % row are the separation values.
@@ -24,10 +24,19 @@ a = [0 0]; %Counter of state transitions
 
 % 10FEB17, lparker: Removed to eliminate confusion. State transition matrix
 % will take all of SoC into account.
+% 23FEB17, LTP: Additional modification will calculate STM as a function of
+% two agents 
 %Identify the range of separation distances for locStart
-rRange = pdist([locStart;locEnd]);
-rRange = rRange(1:length(locEnd));
-subRange = [min(rRange) max(rRange)];
+rRangeVec = [];
+for ee = 1:length(locStart)
+    rRange = pdist([locStart(ee,:);locEnd]);
+    rRange = rRange(1:length(locEnd));
+    rRangeVec = [rRangeVec rRange];
+end
+
+%rRange = pdist([locStart;locEnd]);
+%rRange = rRange(1:length(locEnd));
+subRange = [min(rRangeVec) max(rRangeVec)];
 subIndCofr = (cofr(1,:) >= subRange(1)) & (cofr(1,:) <= subRange(2));
 cofr = cofr(:,subIndCofr); %Redefine the range of C(r) values that should be considered for the given arm
 

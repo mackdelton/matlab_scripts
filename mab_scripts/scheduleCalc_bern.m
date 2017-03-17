@@ -92,6 +92,7 @@ switch(opts(1))
         for t = 1:opts(2)
             bestV = 0; %Initialize bestV
             %Determine AgentA's next location for reception
+            pA = stmCalc(armLocA, armLocB, [xx;c], gThresh);
             for a = 1:armNumA
                 %dcdr = abs(interp1(xx(1:end-1),dc,r,'linear')); %Use this value to define the state transition matrix
 
@@ -105,7 +106,7 @@ switch(opts(1))
                 %Thought that I would use the derivative of the C(r) to
                 %define the STM, but did not take that route.
                 %pA = [(1-dcdr) dcdr;dcdr (1-dcdr)];
-                pA = stmCalc(agentA, armLocB, [xx;c], gThresh);
+                
                 %rBias = (pdist([agentB;armLocA(a,:)],'euclidean')/mR);
 
                 %LTP, 03/27/16: Attempt at implementing Bernoulli-like
@@ -113,15 +114,20 @@ switch(opts(1))
                 %10/7/16, LTP: Potentially error prone way of
                 %determining rewards. May have just been a way to
                 %generate variety in definition of reward system.
-                if ((rand(1) < rA(a)) && (rand(1) > gThresh))
+                %02/23/17, LTP: Updating to be slightly more consistent in 
+                %how reward is determined.
+                dice = rand(1);
+                if ((dice < rA(a)) && (dice > gThresh))
                     rew = [0;1];
                 else
                     rew = [0;0];
                 end
+                %Temporary solution
+                %rew = [0;rA(a)];
                 %Identify the location(s) with the max Gittins' Index
                 %(there may be more than one)
                 vA(a) = max(gittins_index_by_varaiya(beta,rew,pA));
-
+                %vA(a) = norm(gittins_index_by_varaiya(beta,rew,pA));
                 %Scale by distance from current AgentA position
                 %101816, LTP: 
                 vA(a) = vA(a) * pdist([agentA;armLocA(a,:)],'euclidean')/max(pdist(armLocA));
@@ -177,7 +183,84 @@ switch(opts(1))
                 waitbar(t/opts(2));
         end
         
-     case {2} %Educated Guess (EG)
+    case {2} %23FEB17, LTP: Upgrade method to compare Gittins Index versus regular ad-hoc method
+             % Really just tests whether or not the STM has any impact or
+             % causes an improvement.
+        h = waitbar(0,'Please wait...running through intelligent iterations');
+        initAgentId = ceil(armNumA*rand);
+        agentA = armLocA(initAgentId,:); %Initialize current location of Agent A
+        for t = 1:opts(2)
+            bestV = 0; %Initialize bestV            
+            for a = 1:armNumA
+                %dcdr = abs(interp1(xx(1:end-1),dc,r,'linear')); %Use this value to define the state transition matrix
+
+                %Define 2-state State Transition Matrix (STM) for Varaiya solution
+                % s0-Poor/no communication (below threshold)
+                % s1-Good/yes communication (above threshold)
+                % NOTE: Threshold does not have to be defined.
+                % (10/07/16, LTP: I have no idea why I said the
+                % threshold doesn't have to be defined)
+                %Unused, (artifact from previous idea for implementation)
+                %Thought that I would use the derivative of the C(r) to
+                %define the STM, but did not take that route.
+                %pA = [(1-dcdr) dcdr;dcdr (1-dcdr)];
+                
+                %rBias = (pdist([agentB;armLocA(a,:)],'euclidean')/mR);
+
+                %LTP, 03/27/16: Attempt at implementing Bernoulli-like
+                %reward system
+                %10/7/16, LTP: Potentially error prone way of
+                %determining rewards. May have just been a way to
+                %generate variety in definition of reward system.
+                %02/23/17, LTP: Updating to be slightly more consistent in 
+                %how reward is determined.
+                dice = rand(1);
+                if ((dice < rA(a)) && (dice > gThresh))
+                    rew = [0;1];
+                else
+                    rew = [0;0];
+                end
+                %Temporary solution
+                %rew = [0;rA(a)];
+                %Identify the location(s) with the max Gittins' Index
+                %(there may be more than one)
+                vA(a) = max(rew);
+                %vA(a) = norm(gittins_index_by_varaiya(beta,rew,pA));
+                %Scale by distance from current AgentA position
+                %101816, LTP: 
+                vA(a) = vA(a) * pdist([agentA;armLocA(a,:)],'euclidean')/max(pdist(armLocA));
+            end
+            agentAold = agentA;
+            % Look for closest point
+            if ~isempty(min(vA(vA>0)))
+                bestV = find(vA == (min(vA(vA>0)))); %Identify closest location
+                %Update current location of Agent A, otherwise, leave
+                %as is.
+                if length(bestV) > 1
+                    bestV = datasample(bestV,1);
+                end
+                agentA = armLocA(bestV,:);
+                agentId(t) = bestV;
+            else %If there is no "best next location" remain at same loc
+                if (t == 1)
+                    agentId(t) = initAgentId;
+                else
+                    agentId(t) = agentId(t-1);
+                end
+            end
+            distTot = distTot + pdist([agentAold;agentA]);
+
+            %Evaluate success or failure of decision
+            mark = envReward(rA(agentId(t)),opts(3),opts(4));
+
+            %Save [x-best y-best separation-best success/failure]
+            bestArmHistory(t,:) = [agentA r(agentId(t)) mark];
+
+            %Update waitbar
+            waitbar(t/opts(2));
+        end
+        
+     case {3} %Educated Guess (EG)
         h = waitbar(0,'Please wait...running through educated iterations');
         initAgentId = ceil(armNumA*rand);
         candidateNum = 100; %Candidate number of arms considered
