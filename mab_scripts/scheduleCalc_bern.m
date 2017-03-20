@@ -77,7 +77,29 @@ agentId = zeros(1,opts(2)); %Record agentA arm selection
 
 %History of all arms selected
 bestArmHistory = zeros(opts(2),4); %[X-pos Y-pos (Separation Dist) success]
+%03/20/17, LTP: Addition of vector that records history of estimates and
+%drives arm selection more closely (nearly identically to) M. Cheung's
+%approach. gittinsVec = [thetaAvg sigmaSq ni v]
+% thetaAvg: From M. Cheung
+% sigmaSq: From M. Cheung
+% ni: From M. Cheung
+% v: From M. Cheung
+gittinsVec = zeros(armNumA, 3);
 
+%03/20/17: Generate approximation of Gittins Indices v(0,n,1) decreasing
+%logarithmically as observations increase.
+%**************************************************************************
+%Define candate locations used to interpolate between
+vVec = [2.5001 10;20.000 0.1;40.0001 0.06;60.0001 0.04;80.0001 0.03];
+observ = [2:0.5:100];
+%observ = observ(observ ~= vVec(:,1))
+pars_exp = mle(vVec(:,2),'distribution','exp'); %Exponential
+%gittinsExp will be the function v(0,n,1) as referenced in 2.13
+gittinsExp = exppdf(observ, pars_exp);
+%f = fit(vVec(:,1),vVec(:,2),'exp1')
+figure;plot(observ,gittinsExp);
+
+%**************************************************************************
 %Calculate distances between potential AgentA locations and expected
 %location of AgentB
 r = pdist([mean(armLocB,1);armLocA],'euclidean');
@@ -89,72 +111,49 @@ switch(opts(1))
         h = waitbar(0,'Please wait...running through intelligent iterations');
         initAgentId = ceil(armNumA*rand);
         agentA = armLocA(initAgentId,:); %Initialize current location of Agent A
-        for t = 1:opts(2)
-            bestV = 0; %Initialize bestV
-            %Determine AgentA's next location for reception
-            pA = stmCalc(armLocA, armLocB, [xx;c], gThresh);
+        
+        %Evaluate success or failure of decision based on the initial
+        %location
+        mark = envReward(rA(agentId(t)),opts(3),opts(4));
+        thetaAvg = mark;
+        sigmaSq = 0;
+        ni = 1;
+        v = thetaAvg + sqrt(sigmaSq)*gittinsExp(ni);
+        gittinsVec(initialAgentId,:) = [thetaAvg sigmaSq ni v];
+        bestV = initialAgentId; %Initialize bestV, the index associated with the best arm selection
+        for t = 2:opts(2) %Start at t=2 to indicate the real first "choice"
+                          %of an arm is at the next decision epoch
+
+            %Determine AgentA's next location for reception by calculating
+            %Gittins Indices usings Equ. 2.13 from M. Cheung MS Thesis
+            
             for a = 1:armNumA
-                %dcdr = abs(interp1(xx(1:end-1),dc,r,'linear')); %Use this value to define the state transition matrix
-
-                %Define 2-state State Transition Matrix (STM) for Varaiya solution
-                % s0-Poor/no communication (below threshold)
-                % s1-Good/yes communication (above threshold)
-                % NOTE: Threshold does not have to be defined.
-                % (10/07/16, LTP: I have no idea why I said the
-                % threshold doesn't have to be defined)
-                %Unused, (artifact from previous idea for implementation)
-                %Thought that I would use the derivative of the C(r) to
-                %define the STM, but did not take that route.
-                %pA = [(1-dcdr) dcdr;dcdr (1-dcdr)];
-                
-                %rBias = (pdist([agentB;armLocA(a,:)],'euclidean')/mR);
-
-                %LTP, 03/27/16: Attempt at implementing Bernoulli-like
-                %reward system
-                %10/7/16, LTP: Potentially error prone way of
-                %determining rewards. May have just been a way to
-                %generate variety in definition of reward system.
-                %02/23/17, LTP: Updating to be slightly more consistent in 
-                %how reward is determined.
-                dice = rand(1);
-                if ((dice < rA(a)) && (dice > gThresh))
-                    rew = [0;1];
+                if (a == bestV) %If recently selected arm is being evaluated (i.e. played) 
+                    ni = gittinsVec(a,3); %Temporarily store arm pulls (cleaner code)
+                    thetaAvg = ((ni-1)/(ni))*gittinsVec(a,1) + (1/ni)*mark;                    
+                    sigmaSq = ((ni-2)/(ni-1))*sqrt(gittinsVec(a,2)) + (1/ni)*(mark-gittinsVec(a,1))^2;
+                    ni = gittinsVec(a,3) + 1;
                 else
-                    rew = [0;0];
+                    thetaAvg = gittinsVec(a,1);
+                    sigmaSq = gittinsVec(a,2);
                 end
-                %Temporary solution
-                %rew = [0;rA(a)];
-                %Identify the location(s) with the max Gittins' Index
-                %(there may be more than one)
-                vA(a) = max(gittins_index_by_varaiya(beta,rew,pA));
-                %vA(a) = norm(gittins_index_by_varaiya(beta,rew,pA));
-                %Scale by distance from current AgentA position
-                %101816, LTP: 
-                vA(a) = vA(a) * pdist([agentA;armLocA(a,:)],'euclidean')/max(pdist(armLocA));
+
+                v = thetaAvg + sqrt(sigmaSq)*gittinsExp(t);
+                gittinsVec(a,:) = [thetaAvg sigmaSq ni v];
             end
+            bestV = max(gittinsVec(:,4));
+            %In case there are multiple max Gittins Indices, randomly
+            %choose one 855-5009
+            bestV = bestV(round((length(bestV)*rand)+1));
+            
             agentAold = agentA;
-            % Look for closest point
-            if ~isempty(min(vA(vA>0)))
-                bestV = find(vA == (min(vA(vA>0)))); %Identify closest location
-                %Update current location of Agent A, otherwise, leave
-                %as is.
-                if length(bestV) > 1
-                    bestV = datasample(bestV,1);
-                end
-                agentA = armLocA(bestV,:);
-                agentId(t) = bestV;
-            else %If there is no "best next location" remain at same loc
-                if (t == 1)
-                    agentId(t) = initAgentId;
-                else
-                    agentId(t) = agentId(t-1);
-                end
-            end
+            agentA = armLocA(bestV,:);
+            agentId(t) = bestV;
+            
             distTot = distTot + pdist([agentAold;agentA]);
-
-            %Evaluate success or failure of decision
+            %Evaluate success or failure of decision based on the initial
+            %location
             mark = envReward(rA(agentId(t)),opts(3),opts(4));
-
             %Save [x-best y-best separation-best success/failure]
             bestArmHistory(t,:) = [agentA r(agentId(t)) mark];
 

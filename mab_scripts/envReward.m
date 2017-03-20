@@ -26,7 +26,7 @@ outcome = 0; %Initialize as 0.
 %(kSuccess-1) successes.
 cumulativeSum = 0;
 for f=1:kSuccess
-    cumulativeSum = cumulativeSum + (nchoosek(numTrials,(f-1))*(sofr^((f-1)))*(1-sofr)^(numTrials-(f-1)));
+    cumulativeSum = cumulativeSum + (nchoosek(numTrials,(f-1))*(sofr^(f-1))*(1-sofr)^(numTrials-(f-1)));
 end
 
 %cumulativeSum represents the likelihood that 0, 1, 2,...(kSuccess-1)
