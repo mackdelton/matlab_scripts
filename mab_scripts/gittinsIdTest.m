@@ -85,13 +85,14 @@ vNew = interp1(vi,v,vi_interp,'cubic');
 
 %Plot Gittins Index values (scaled version)
 % Presuming a = 0.95, 0.2236 = (1-0.95)^0.5 and vi_interp = n
+vNewScaled = vNew./(vi_interp*0.2236);
 figure;
-semilogy(vNew(1:100)./(vi_interp(1:100)*0.2236),'g','linewidth',3);grid on;
+semilogy(vi_interp,vNewScaled,'g','linewidth',3);grid on;
 xlabel('Number of Trials','fontsize',12,'fontweight','bold')
 ylabel('Gittins'' Index','fontsize',12,'fontweight','bold')
 set(gca,'fontsize',12,'fontweight','bold')
 %Generate Gittins' Index reference for use in MAB multi-agent sim.
-save('gittins.mat','vi_interp','vNew');
+save('gittins.mat','vi_interp','vNew','vNewScaled');
 % %plotchr = ['d';'*';'*';'*';'*'];
 % plotchr = ['g';'r';'k';'c';'b'];
 % aLen = length(a);

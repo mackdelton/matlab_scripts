@@ -8,7 +8,7 @@ vs = [0 1 2]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
       %2 - Semi-intelligent
 h = waitbar(0, 'loading and writing data, WAIT!');
 
-data_name = strcat('testdata23FEB17_cmp.txt');
+data_name = strcat('testdata27MAR17_cmp_gimod.txt');
 
 %fid_data = fopen(data_name,'a+');
 %fid_loc = fopen(loc_name,'a+');
