@@ -82,7 +82,7 @@ for iter_i = iter
         %[histA aId] = scheduleCalc(betaVal,locsA,locsB,[v iter],maxR);
 
         %Use for single agent Bernoulli version
-        [histA aId aB gRef distMax] = scheduleCalc_bern(betaVal,locsA,locsB,[ii iter_i kk noN],maxR,probType);
+        [histA aId aB gRef distMax gittinsHist] = scheduleCalc_bern(betaVal,locsA,locsB,[ii iter_i kk noN],maxR,probType);
 
         %Use for single agent Bernoulli version and binomial-defined rewards
         %[histA aId aB gRef] = scheduleCalc_bernbino(betaVal,locsA,locsB,[v iter],maxR);
@@ -90,7 +90,9 @@ for iter_i = iter
         %Plot results for visual
         %eval(['save(''bernoulliGittens_' num2str(N) '_' ...
         %    num2str(iter) '.mat'',''histA'',''aId'',''aB'',''locsA'',''locsB'',''gRef'');']);
-        %Store data in file according to [spatial distribution type, SoC type (gamma/exp), number of agents(or arms), number of time epochs, type of solution (GI/random)]
+        % Store data in file according to -->
+        % Spatial distribution type: Random/Uniform,
+        % SoC type: Gamma/Exp, number of agents(or arms), number of time epochs, type of solution (GI/random)]
         eval(['save(''./data/cond_' num2str(kk) 'of' num2str(noN) '/dataout_' num2str(spaceType) '_' num2str(probType) '_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '.mat'');']);
         waitbar(ii/length(v));
     end

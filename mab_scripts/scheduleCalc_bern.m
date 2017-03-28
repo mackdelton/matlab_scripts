@@ -1,15 +1,17 @@
-function [bestArmHistory, agentId, agentB, c_r, distTot] = scheduleCalc_bern(beta,armLocA,armLocB,opts,mR,pType)
+function [bestArmHistory, agentId, agentB, c_r, distTot, gittinsMat] = scheduleCalc_bern(beta,armLocA,armLocB,opts,mR,pType)
 %Test script for schedule algorithm based on Weber Tutorial and L. Gregorio
 %This script is modified to account/test for the impact of alternating
 %arm/location selection to mimic TDMA communication protocol.
 %Created by: Lonnie Parker
 %Created on: 02/19/16
-%Last modified on: 03/27/16
+%Last modified on: 03/28/17
 %Modification History:
 %03/27/16: Created Bernoulli version of scheduleCalc.m
 %(scheduleCalc_bern.m) to test unity reward and select arm based on
 %proximity.
 %10/10/16: Cleaned up for checking into git repo.
+%03/28/17: Added history of Gittins values, gittinsMat, as a return
+%variable
 %Naval Undersea Warfare Center DIVNPT
 
 %INPUTS
@@ -20,7 +22,11 @@ function [bestArmHistory, agentId, agentB, c_r, distTot] = scheduleCalc_bern(bet
 % be tested [Solution type, length of run, minimum number of successes,
 % total number of communication "trials" considered].
 % Solution type can be:
+% REMOVED as of 01MAR17
 % (0 - Varaiya, 1 - Baseline(random), 2 - Parker, 3 - Sonin, 3 - Katehakis)
+% REPLACED WITH
+% (0 - Cheung, 1 - Baseline(random), 2 - Parker (ad-hoc, not used for
+% 04APR17 review))
 % mR: Maximum possible distance between agents
 % pType: Success of Communication curve type (exponential or gamma) (as of
 % 10FEB17.
@@ -35,10 +41,14 @@ function [bestArmHistory, agentId, agentB, c_r, distTot] = scheduleCalc_bern(bet
 % cofr: A 3 x n vector representing r, C(r), and the threshold used
 % distTot: a 1x1 value representing the total distance traveled throughout
 % all iterations.
+% gittinsMat: A N x 4 x opts(2) multi-dimensional matrix that records the
+% time history of each change in the Gittins Index calculations for each
+% location (or arm). This variable will be empty for opts(1) ~= 0
 
 rng('default'); %Set seed value for reproduceability
 load socs.mat % Load SoC options
-load gittins.mat % Load prepopulated Gittins' Index values (beta == 0.95)
+gittinsMat = []; %Placeholder, not used for opts(1) ~= 0
+%load gittins.mat % Load prepopulated Gittins' Index values (beta == 0.95)
 %Calculate derivative of SoC
 if pType == 0
     c = ss_est_gamma;
@@ -117,7 +127,9 @@ rA = interp1(xx,c,r,'linear');
 distTot = 0; %Initialize total distance traversed between arm selections
 switch(opts(1))
     case {0} %Solution by Varaiya et al.
-        h = waitbar(0,'Please wait...running through intelligent iterations');
+        %Initialize Gittins Index history matrix
+        gittinsMat = zeros(armNumA, 4,opts(2)); %E.G. [N x 4 x Epochs]
+%        h = waitbar(0,'Please wait...running through intelligent iterations');
         initAgentId = ceil(armNumA*rand);
         agentA = armLocA(initAgentId,:); %Initialize current location of Agent A
         agentId(1) = initAgentId;
@@ -129,24 +141,24 @@ switch(opts(1))
         ni = 1;
         v = thetaAvg + sqrt(sigmaSq)*gittinsExp(ni);
         gittinsVec(initAgentId,:) = [thetaAvg sigmaSq ni v];
+        gittinsMat(:,:,1) = gittinsVec;
         bestV = initAgentId; %Initialize bestV, the index associated with the best arm selection
         for t = 2:opts(2) %Start at t=2 to indicate the real first "choice"
                           %of an arm is at the next decision epoch
-
+            gittinsMat(:,:,t) = gittinsVec;
             %Determine AgentA's next location for reception by calculating
             %Gittins Indices usings Equ. 2.13 from M.  Cheung MS Thesis
             %(2013)
             
             for a = 1:armNumA
                 if (a == bestV) %If recently selected arm is being evaluated (i.e. played) 
-                    ni = gittinsVec(a,3); %Temporarily store total number of arm pulls for use in subsequent calculations (cleaner code)
+                    ni = gittinsVec(a,3) + 1; %Update total arm pulls
                     thetaAvg = ((ni-1)/(ni))*gittinsVec(a,1) + (1/ni)*mark;
                     if ni >= 2
                         sigmaSq = ((ni-2)/(ni-1))*sqrt(gittinsVec(a,2)) + (1/ni)*(mark-gittinsVec(a,1))^2;
                     else
                         sigmaSq = gittinsVec(a,2);
                     end
-                    ni = gittinsVec(a,3) + 1; %Update total arm pulls
                 else
                     thetaAvg = gittinsVec(a,1);
                     sigmaSq = gittinsVec(a,2);
@@ -202,11 +214,11 @@ switch(opts(1))
             bestArmHistory(t,:) = [agentA r(agentId(t)) mark];
 
             %Update waitbar
-            waitbar(t/opts(2));
+%            waitbar(t/opts(2));
         end
         
      case {1} %Uniformed Random (UR)
-        h = waitbar(0,'Please wait...running through baseline iterations');
+%        h = waitbar(0,'Please wait...running through baseline iterations');
         initAgentId = ceil(armNumA*rand);
         agentA = armLocA(initAgentId,:); %Initialize current location of Agent A
         for t = 1:opts(2)
@@ -223,13 +235,13 @@ switch(opts(1))
                 %Save [x-best y-best separation-best]
                 bestArmHistory(t,:) = [agentA r(ranSel) mark];
                 %Update waitbar
-                waitbar(t/opts(2));
+%                waitbar(t/opts(2));
         end
         
     case {2} %23FEB17, LTP: Upgrade method to compare Gittins Index versus regular ad-hoc method
              % Really just tests whether or not the STM has any impact or
              % causes an improvement.
-        h = waitbar(0,'Please wait...running through intelligent iterations');
+ %       h = waitbar(0,'Please wait...running through intelligent iterations');
         initAgentId = ceil(armNumA*rand);
         agentA = armLocA(initAgentId,:); %Initialize current location of Agent A
         for t = 1:opts(2)
@@ -300,11 +312,11 @@ switch(opts(1))
             bestArmHistory(t,:) = [agentA r(agentId(t)) mark];
 
             %Update waitbar
-            waitbar(t/opts(2));
+%            waitbar(t/opts(2));
         end
         
      case {3} %Educated Guess (EG)
-        h = waitbar(0,'Please wait...running through educated iterations');
+ %       h = waitbar(0,'Please wait...running through educated iterations');
         initAgentId = ceil(armNumA*rand);
         candidateNum = 100; %Candidate number of arms considered
         agentA = armLocA(initAgentId,:); %Initialize current location of Agent A
@@ -378,9 +390,9 @@ switch(opts(1))
                 bestArmHistory(t,:) = [agentA r(agentId(t)) mark];
                 
                 %Update waitbar
-                waitbar(t/opts(2));
+%                waitbar(t/opts(2));
         end 
     otherwise
         disp{'Unknown selection'}
 end
-close(h)
+%close(h)

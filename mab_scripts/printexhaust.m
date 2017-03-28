@@ -8,7 +8,7 @@ vs = [0 1 2]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
       %2 - Semi-intelligent
 h = waitbar(0, 'loading and writing data, WAIT!');
 
-data_name = strcat('testdata27MAR17_cmp_gimod.txt');
+data_name = strcat('testdata28MAR17_cmp.txt');
 
 %fid_data = fopen(data_name,'a+');
 %fid_loc = fopen(loc_name,'a+');
@@ -29,6 +29,15 @@ for bn = 1:length(bern) %For bernoulli condition of success
                         ob = ones(length(histA),1); %Generic 1's vector
                         dlmwrite(data_name,...
                             [aId' histA bn*ob, dT*ob, sT*ob, nn*ob, iterate_i*ob, ii*ob],'-append');
+                        %Optional line to interrogate evolution of Gittins'
+                        %Indices
+                        a = 4;
+                        y1 = squeeze(gittinsHist(1,a,:));
+                        y3 = squeeze(gittinsHist(3,a,:));
+                        y17 = squeeze(gittinsHist(17,a,:));
+                        figure;
+                        plot(y1,'r');hold on;
+                        plot(y3,'g');plot(y17,'c')
                         %dlmwrite(loc_name,[locsA locsB],'-append');
                     end
                 end
@@ -53,3 +62,7 @@ dlmwrite(loc_name_mesh100,[locsA locsB]);
 
 
 close(h)
+
+%% Generate quick visual tool for analyzing evolution of Gittins Indices
+
+

@@ -30,16 +30,16 @@ N = len(locs)       #Number of candidate locations
 distT = 0    #Distribution type (Uniform Random - 0, Mesh grid - 1)
 
 #Define parameters of interest
-bC = 1       #Number of Bernoulli trials considered (1 - 1of1, 2 - 1of5, 3 - 1of10)
+bC = 3       #Number of Bernoulli trials considered (1 - 1of1, 2 - 1of5, 3 - 1of10)
 soc_type = 0 #Type of Success of Communication curve (0 - Gamma, 1 - Exponential)
 nIter = 100  #Number of iterations (timesteps or duration, 100, 500, or 1000)
 scl = 1   #Scale factor for plotting (1 - 100, 0.05 - 500, 0.001 - 1000)
-soln = 1     #Solution of interest (Gittins Index, GI - 0, Uninformed Random, UR - 1; Educated Guess, EG - 2)
+soln = 0     #Solution of interest (Gittins Index, GI - 0, Uninformed Random, UR - 1; Educated Guess, EG - 2)
 
 
 #STEP 2: Read in and visualize MAB data
 colT = ['id','selx','sely','rng','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type'] #Define the column headers for data extraction
-dataIn = pd.read_table("./testdata27MAR17_cmp_gimod.txt", header=None, sep=',', index_col=False, names=colT)
+dataIn = pd.read_table("./testdata28MAR17_cmp.txt", header=None, sep=',', index_col=False, names=colT)
 #Change data types of specific columns
 dataIn[['selx','sely','rng']] = dataIn[['selx','sely','rng']].astype(float)
 dataIn[['id','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type']] = dataIn[['id','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type']].astype(int)
