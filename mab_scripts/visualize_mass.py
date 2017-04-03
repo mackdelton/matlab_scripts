@@ -30,19 +30,19 @@ N = len(locs)       #Number of candidate locations
 distT = 0    #Distribution type (Uniform Random - 0, Mesh grid - 1)
 
 #Define parameters of interest
-bC = 3       #Number of Bernoulli trials considered (1 - 1of1, 2 - 1of5, 3 - 1of10)
+bC = 1       #Number of Bernoulli trials considered (1 - 1of1, 2 - 1of5, 3 - 1of10)
 soc_type = 0 #Type of Success of Communication curve (0 - Gamma, 1 - Exponential)
 nIter = 100  #Number of iterations (timesteps or duration, 100, 500, or 1000)
 scl = 1   #Scale factor for plotting (1 - 100, 0.05 - 500, 0.001 - 1000)
-soln = 0     #Solution of interest (Gittins Index, GI - 0, Uninformed Random, UR - 1; Educated Guess, EG - 2)
+soln = 1     #Solution of interest (Gittins Index, GI - 0, Uninformed Random, UR - 1; Educated Guess, EG - 2)
 
 
 #STEP 2: Read in and visualize MAB data
-colT = ['id','selx','sely','rng','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type'] #Define the column headers for data extraction
-dataIn = pd.read_table("./testdata28MAR17_cmp.txt", header=None, sep=',', index_col=False, names=colT)
-#Change data types of specific columns
-dataIn[['selx','sely','rng']] = dataIn[['selx','sely','rng']].astype(float)
-dataIn[['id','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type']] = dataIn[['id','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type']].astype(int)
+colT = ['id','selx','sely','rngP','rng','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type','dist_tot'] #Define the column headers for data extraction
+dataIn = pd.read_table("./testdata03APR17_stationaryB_1.txt", header=None, sep=',', index_col=False, names=colT)
+#Change data types of specific columns (i.e., float for some columns and int for others)
+dataIn[['selx','sely','rngP','rng']] = dataIn[['selx','sely','rngP','rng']].astype(float)
+dataIn[['id','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type','dist_tot']] = dataIn[['id','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type','dist_tot']].astype(int)
 
 #STEP 3: Extract relevant dataset pertaining to test scenario
 #Try to concatenate portions of dataIn relevant to the scenario of interest
@@ -68,8 +68,14 @@ for r in np.arange(0,N):
 #Histogram of frequency of visited locations
 hdata = np.histogram(dataParse['id'],bins=N)
 hdata = hdata[0]
-#bdata = np.arange(0,)
 
+#Histogram of ranges calculated between agentA and agent B
+hdata = np.histogram(dataParse['rng'],bins=N)
+#hdata = hdata[0]
+#bdata = np.arange(0,)
+plt.bar(hdata[0],hdata[1]) ????
+
+'''
 plt.close('all')
 successTotal = candLoc.loc[:,'success'].astype(int).sum(axis=0)
 trialTotal = candLoc.loc[:,'trials'].astype(int).sum(axis=0)
@@ -120,3 +126,4 @@ ax2.set_xlim(min(locs['alocx'])-2, max(locs['alocx'])+1)
 f.savefig('CMP_27MAR17_PKR.png', bbox_inches='tight')  
 f.show()
 #plt.show()
+'''
