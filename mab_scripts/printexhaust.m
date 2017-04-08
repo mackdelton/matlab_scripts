@@ -8,7 +8,7 @@ vs = [0 1]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
       %2 - Semi-intelligent
 h = waitbar(0, 'loading and writing data, WAIT!');
 
-data_name = strcat('testdata07APR17_stationaryB_1.txt');
+data_name = strcat('/improv/testdata07APR17_stationaryB_1.txt');
 sB = 0;
 
 %fid_data = fopen(data_name,'a+');
@@ -21,7 +21,7 @@ for bn = 1:length(bern) %For bernoulli condition of success
                 for iterate_i = iters % Number of iterations
                     for ii = vs % Solution type
                         [ii iterate_i bn nn]
-                        load(char(strcat('/home/lparker/matlab_scripts/mab_scripts/data_stationaryB_1/cond_',...
+                        load(char(strcat('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_1/cond_',...
                              bern(bn),'/',...
                             'dataout_',...
                             num2str(dT),'_',...
