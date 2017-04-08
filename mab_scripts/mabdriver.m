@@ -23,11 +23,11 @@ else if sizeType == 1
     end
 end
 N = m*n;
-iter = [100]; %Number of iterations ("t") %10FEB17: Removed 500 and 1000 to
+iter = [100 500 1000]; %Number of iterations ("t") %10FEB17: Removed 500 and 1000 to
 % speed up analysis.
 %iter = [50 100 150 200]; %Number of iterations ("t")
 v = [0 1 2]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
-      %2 - Semi-intelligent, 3 - Parker test
+      %2 - Epsilon Greedy (added 08APR17)
 spaceType = gridType; %Define type of spatial distibution of candidate locations (
                %0 - uniform random, 1 - even grid
 maxSpace = 20; %Max space of navigation area (nmi)
@@ -82,7 +82,7 @@ for iter_i = iter
         %[histA aId] = scheduleCalc(betaVal,locsA,locsB,[v iter],maxR);
 
         %Use for single agent Bernoulli version
-        [histA aId aB gRef distMax] = scheduleCalc_bern(betaVal,locsA,locsB,[ii iter_i kk noN],maxR,probType);
+        [histA aId aB gRef distMax gittinsHist] = scheduleCalc_bern(betaVal,locsA,locsB,[ii iter_i kk noN],maxR,probType);
 
         %Use for single agent Bernoulli version and binomial-defined rewards
         %[histA aId aB gRef] = scheduleCalc_bernbino(betaVal,locsA,locsB,[v iter],maxR);
@@ -90,7 +90,10 @@ for iter_i = iter
         %Plot results for visual
         %eval(['save(''bernoulliGittens_' num2str(N) '_' ...
         %    num2str(iter) '.mat'',''histA'',''aId'',''aB'',''locsA'',''locsB'',''gRef'');']);
-        eval(['save(''./data/cond_' num2str(kk) 'of' num2str(noN) '/dataout_' num2str(spaceType) '_' num2str(probType) '_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '.mat'');']);
+        % Store data in file according to -->
+        % Spatial distribution type: Random/Uniform,
+        % SoC type: Gamma/Exp, number of agents(or arms), number of time epochs, type of solution (GI/random)]
+        eval(['save(''./improv/data_stationaryB_0/cond_' num2str(kk) 'of' num2str(noN) '/dataout_' num2str(spaceType) '_' num2str(probType) '_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '.mat'');']);
         waitbar(ii/length(v));
     end
     close(hhh)

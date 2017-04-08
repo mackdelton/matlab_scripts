@@ -26,11 +26,11 @@ outcome = 0; %Initialize as 0.
 %(kSuccess-1) successes.
 cumulativeSum = 0;
 for f=1:kSuccess
-    cumulativeSum = cumulativeSum + (nchoosek(numTrials,(f-1))*(sofr^((f-1)))*(1-sofr)^(numTrials-(f-1)));
+    cumulativeSum = cumulativeSum + (nchoosek(numTrials,(f-1))*(sofr^(f-1))*(1-sofr)^(numTrials-(f-1)));
 end
 
-%cumulativeSum represents the likelihood that 0, 1, 2,...(kSuccess-1)
-%successes will occur. Therefore, p represents the likelihood that exactly
+%cumulativeSum represents the likelihood that exactly 0, 1, 2,...(kSuccess-1)
+%successes will occur. Therefore, p represents the likelihood that at least
 %kSuccesses will occur.
 p = 1 - cumulativeSum;
 
@@ -39,6 +39,7 @@ p = 1 - cumulativeSum;
 
 %When p is high (i.e. close to "1"), then the randomly generated number is
 %more likely to fall under p and is considered a success (i.e., a "1")
-if rand <= p 
-    outcome = 1;
+testR = rand;
+if (testR <= p)
+     outcome = 1;
 end
