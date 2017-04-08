@@ -4,7 +4,7 @@ socTypeS = {'gamma','exp'};
 NN=[20 100]; %Number of agents
 distType = [0 1]; % Spatial distribution type (0-Random, 1-Mesh)
 iters = [100 500 1000]; %Number of iterations ("t")
-vs = [0 1]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
+vs = [0 1 2]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
       %2 - Semi-intelligent
 h = waitbar(0, 'loading and writing data, WAIT!');
 
@@ -43,13 +43,13 @@ loc_name_rnd20 = strcat('testloc_rnd20_cmp.txt');
 loc_name_rnd100 = strcat('testloc_rnd100_cmp.txt');
 loc_name_mesh20 = strcat('testloc_mesh20_cmp.txt');
 loc_name_mesh100 = strcat('testloc_mesh100_cmp.txt');
-load('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_0/cond_1of1/dataout_0_0_20_100_0.mat')
+load('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_1/cond_1of1/dataout_0_0_20_100_0.mat')
 dlmwrite(loc_name_rnd20,[locsA locsB]);
-load('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_0/cond_1of1/dataout_1_0_20_100_0.mat')
+load('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_1/cond_1of1/dataout_1_0_20_100_0.mat')
 dlmwrite(loc_name_mesh20,[locsA locsB]);
-load('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_0/cond_1of1/dataout_0_0_100_100_0.mat')
+load('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_1/cond_1of1/dataout_0_0_100_100_0.mat')
 dlmwrite(loc_name_rnd100,[locsA locsB]);
-load('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_0/cond_1of1/dataout_1_0_100_100_0.mat')
+load('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_1/cond_1of1/dataout_1_0_100_100_0.mat')
 dlmwrite(loc_name_mesh100,[locsA locsB]);
 
 

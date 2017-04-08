@@ -26,8 +26,8 @@ N = m*n;
 iter = [100 500 1000]; %Number of iterations ("t") %10FEB17: Removed 500 and 1000 to
 % speed up analysis.
 %iter = [50 100 150 200]; %Number of iterations ("t")
-v = [0 1]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
-      %2 - Semi-intelligent, 3 - Parker test
+v = [0 1 2]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
+      %2 - Epsilon Greedy (added 08APR17)
 spaceType = gridType; %Define type of spatial distibution of candidate locations (
                %0 - uniform random, 1 - even grid
 maxSpace = 20; %Max space of navigation area (nmi)
