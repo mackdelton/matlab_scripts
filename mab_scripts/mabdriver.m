@@ -23,7 +23,7 @@ else if sizeType == 1
     end
 end
 N = m*n;
-iter = [100]; %Number of iterations ("t") %10FEB17: Removed 500 and 1000 to
+iter = [100 500 1000]; %Number of iterations ("t") %10FEB17: Removed 500 and 1000 to
 % speed up analysis.
 %iter = [50 100 150 200]; %Number of iterations ("t")
 v = [0 1]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
@@ -93,7 +93,7 @@ for iter_i = iter
         % Store data in file according to -->
         % Spatial distribution type: Random/Uniform,
         % SoC type: Gamma/Exp, number of agents(or arms), number of time epochs, type of solution (GI/random)]
-        eval(['save(''./data_stationaryB_0/cond_' num2str(kk) 'of' num2str(noN) '/dataout_' num2str(spaceType) '_' num2str(probType) '_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '.mat'');']);
+        eval(['save(''./data_stationaryB_1/cond_' num2str(kk) 'of' num2str(noN) '/dataout_' num2str(spaceType) '_' num2str(probType) '_' num2str(N) '_' num2str(iter_i) '_' num2str(ii) '.mat'');']);
         waitbar(ii/length(v));
     end
     close(hhh)

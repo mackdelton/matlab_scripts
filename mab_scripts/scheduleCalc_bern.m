@@ -128,7 +128,7 @@ distTot = 0; %Initialize total distance traversed between arm selections
 % 1 - agent B location is estimated as the mean of all locations prior to
 % each transmission.
 
-stationaryB = 0;
+stationaryB = 1;
 
 switch(opts(1))
     case {0} %Solution by Varaiya et al.
@@ -215,6 +215,9 @@ switch(opts(1))
 %                 end
 %                 bestV = rngInd(bestMin);
             end
+            
+            %Evaluate "continuation" condition
+            
             %Exploitation policy
             %bestV = ????
             
