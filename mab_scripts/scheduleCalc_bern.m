@@ -96,7 +96,7 @@ bestArmHistory = zeros(opts(2),5); %[X-pos Y-pos Prob(Separation Dist) Separatio
 % sigmaSq: From M. Cheung
 % ni: From M. Cheung
 % v: From M. Cheung
-gittinsVec = zeros(armNumA, 4);
+gittinsVec = [zeros(armNumA, 4) (1:armNumA)'];
 
 %03/20/17: Generate approximation of Gittins Indices v(0,n,1) decreasing
 %logarithmically as observations increase.
@@ -128,12 +128,12 @@ distTot = 0; %Initialize total distance traversed between arm selections
 % 1 - agent B location is estimated as the mean of all locations prior to
 % each transmission.
 
-stationaryB = 1;
+stationaryB = 0;
 
 switch(opts(1))
-    case {0} %Solution by Varaiya et al.
+    case {0} %Solution by M. Cheung et al.
         %Initialize Gittins Index history matrix
-        gittinsMat = zeros(armNumA, 4,opts(2)); %E.G. [N x 4 x Epochs]
+        gittinsMat = zeros(armNumA, 5,opts(2)); %E.G. [N x 5 x Epochs]
 %        h = waitbar(0,'Please wait...running through intelligent iterations');
         initAgentId = ceil(armNumA*rand);
         agentA = armLocA(initAgentId,:); %Initialize current location of Agent A
@@ -156,7 +156,7 @@ switch(opts(1))
         sigmaSq = 0;
         ni = 1;
         v = thetaAvg + sqrt(sigmaSq)*gittinsExp(ni);
-        gittinsVec(initAgentId,:) = [thetaAvg sigmaSq ni v];
+        gittinsVec(initAgentId,:) = [thetaAvg sigmaSq ni v gittinsVec(initAgentId,5)];
         gittinsMat(:,:,1) = gittinsVec;
         bestV = initAgentId; %Initialize bestV, the index associated with the best arm selection
         
@@ -169,7 +169,7 @@ switch(opts(1))
             %Determine AgentA's next location for reception by calculating
             %Gittins Indices usings Equ. 2.13 from M.  Cheung MS Thesis
             %(2013)
-            
+                
             for a = 1:armNumA
                 if (a == bestV) %If recently selected arm is being evaluated (i.e. played) 
                     ni = gittinsVec(a,3) + 1; %Update total arm pulls
@@ -186,36 +186,42 @@ switch(opts(1))
                 end
 
                 v = thetaAvg + sqrt(sigmaSq)*gittinsExp(t);
-                gittinsVec(a,:) = [thetaAvg sigmaSq ni v];
-            end
-            bestV = (gittinsVec(:,4) == max(gittinsVec(:,4)));
-            %Initially, the calculated Gittins' Indices will be  the same,
-            %so explore. (Consider the alternative case where you remain
-            %where you are and look at the differences in output)
-            %In case there are multiple max Gittins Indices, randomly
-            %choose one.
-            %Exploration policy
-            if length(bestV) > 1
-                % % Option 1: Randomly choose
-                bestV = ceil(length(bestV)*rand);
-%                 % % Option 2: Choose the closest location
-%                 rngInd = find(bestV==1);
-%                 5-Mar                rngFrom = pdist([agentA;armLocA(rngInd,:)]);You 
-%                 %Only preserve the distances from the current location to
-%                 %all others, NOT additional distances between other
-%                 %locations. e.g. rngFrom = [5 5 16 19]
-%                 rngFrom = rngFrom(1:length(rngInd));
-%                 
-%                 minRng = rngFrom == min(rngFrom); %Binary vector/value
-%                 bestMin = find(minRng == 1);
-%                 %If there's STILL more than one option for the closest
-%                 %location, randomly pick one.
-%                 if length(bestMin) > 1
-%                     bestMin = bestMin(ceil(length(bestMin)*rand));
-%                 end
-%                 bestV = rngInd(bestMin);
+                gittinsVec(a,:) = [thetaAvg sigmaSq ni v gittinsVec(a,5)];
             end
             
+            %Replicate the evaluation of a "continuation" index before
+            %calcuating a "decision" index. IF newest GI calculated is LESS
+            %than the previous BEST, then seek a new BEST, ELSE, CONTINUE
+            %if (max(gittinsMat(bestV,4,1:t-1)) > gittinsVec(bestV,4)) && (t > 0.1*opts(2))
+                %08APR17, LTP: Added correction to how "bestV" is indexed
+                bestV = gittinsVec((gittinsVec(:,4) == max(gittinsVec(:,4))),5);
+                %Initially, the calculated Gittins' Indices will be  the same,
+                %so explore. (Consider the alternative case where you remain
+                %where you are and look at the differences in output)
+                %In case there are multiple max Gittins Indices, randomly
+                %choose one.
+                %Exploration policy
+                if length(bestV) > 1
+                    % % Option 1: Randomly choose
+                    bestV = ceil(length(bestV)*rand);
+    %                 % % Option 2: Choose the closest location
+    %                 rngInd = find(bestV==1);
+    %                 5-Mar                rngFrom = pdist([agentA;armLocA(rngInd,:)]);You 
+    %                 %Only preserve the distances from the current location to
+    %                 %all others, NOT additional distances between other
+    %                 %locations. e.g. rngFrom = [5 5 16 19]
+    %                 rngFrom = rngFrom(1:length(rngInd));
+    %                 
+    %                 minRng = rngFrom == min(rngFrom); %Binary vector/value
+    %                 bestMin = find(minRng == 1);
+    %                 %If there's STILL more than one option for the closest
+    %                 %location, randomly pick one.
+    %                 if length(bestMin) > 1
+    %                     bestMin = bestMin(ceil(length(bestMin)*rand));
+    %                 end
+    %                 bestV = rngInd(bestMin);
+                end
+            %end
             %Evaluate "continuation" condition
             
             %Exploitation policy

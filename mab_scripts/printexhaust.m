@@ -8,7 +8,7 @@ vs = [0 1]; %Solution version: 0 - Varaiya, 1 - Baseline(random),
       %2 - Semi-intelligent
 h = waitbar(0, 'loading and writing data, WAIT!');
 
-data_name = strcat('/improv/testdata07APR17_stationaryB_1.txt');
+data_name = strcat('improv_testdata08APR17_stationaryB_0.txt');
 sB = 0;
 
 %fid_data = fopen(data_name,'a+');
@@ -21,7 +21,7 @@ for bn = 1:length(bern) %For bernoulli condition of success
                 for iterate_i = iters % Number of iterations
                     for ii = vs % Solution type
                         [ii iterate_i bn nn]
-                        load(char(strcat('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_1/cond_',...
+                        load(char(strcat('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_0/cond_',...
                              bern(bn),'/',...
                             'dataout_',...
                             num2str(dT),'_',...
@@ -43,13 +43,13 @@ loc_name_rnd20 = strcat('testloc_rnd20_cmp.txt');
 loc_name_rnd100 = strcat('testloc_rnd100_cmp.txt');
 loc_name_mesh20 = strcat('testloc_mesh20_cmp.txt');
 loc_name_mesh100 = strcat('testloc_mesh100_cmp.txt');
-load('/home/lparker/matlab_scripts/mab_scripts/data_stationaryB_1/cond_1of1/dataout_0_0_20_100_0.mat')
+load('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_0/cond_1of1/dataout_0_0_20_100_0.mat')
 dlmwrite(loc_name_rnd20,[locsA locsB]);
-load('/home/lparker/matlab_scripts/mab_scripts/data_stationaryB_1/cond_1of1/dataout_1_0_20_100_0.mat')
+load('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_0/cond_1of1/dataout_1_0_20_100_0.mat')
 dlmwrite(loc_name_mesh20,[locsA locsB]);
-load('/home/lparker/matlab_scripts/mab_scripts/data_stationaryB_1/cond_1of1/dataout_0_0_100_100_0.mat')
+load('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_0/cond_1of1/dataout_0_0_100_100_0.mat')
 dlmwrite(loc_name_rnd100,[locsA locsB]);
-load('/home/lparker/matlab_scripts/mab_scripts/data_stationaryB_1/cond_1of1/dataout_1_0_100_100_0.mat')
+load('/home/lparker/matlab_scripts/mab_scripts/improv/data_stationaryB_0/cond_1of1/dataout_1_0_100_100_0.mat')
 dlmwrite(loc_name_mesh100,[locsA locsB]);
 
 
@@ -69,7 +69,7 @@ q = [1 2 3 4];
 
 %Select the arms of interest (up to 4)
 %Identify the arms with the top 5 Gittins Indices by the end of the run
-refG = [[1:length(gittinsHist(:,:,end))]' gittinsHist(:,:,end)];
+refG = [(1:length(gittinsHist(:,:,end)))' gittinsHist(:,:,end)];
 refGSort = sortrows(refG,-5); %Sort by the fifth column to obtain Gittins Indices in
 % descending order.
 refGInd = refGSort(1:5,1);
