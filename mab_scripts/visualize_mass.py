@@ -39,7 +39,7 @@ soln = 2     #Solution of interest (Gittins Index, GI - 0, Uninformed Random, UR
 
 #STEP 2: Read in and visualize MAB data
 colT = ['id','selx','sely','rngP','rng','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type','dist_tot'] #Define the column headers for data extraction
-dataIn = pd.read_table("./improv_testdata08APR17_stationaryB_0.txt", header=None, sep=',', index_col=False, names=colT)
+dataIn = pd.read_table("./improv_testdata10APR17_stationaryB_1.txt", header=None, sep=',', index_col=False, names=colT)
 #Change data types of specific columns (i.e., float for some columns and int for others)
 dataIn[['selx','sely','rngP','rng']] = dataIn[['selx','sely','rngP','rng']].astype(float)
 dataIn[['id','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type','dist_tot']] = dataIn[['id','out','bernCnt','distribution','soc','loc_cnt','iter','sol_type','dist_tot']].astype(int)

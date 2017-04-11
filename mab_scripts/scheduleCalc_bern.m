@@ -48,7 +48,6 @@ function [bestArmHistory, agentId, agentB, c_r, distTot, gittinsMat] = scheduleC
 rng('default'); %Set seed value for reproduceability
 load socs.mat % Load SoC options
 gittinsMat = []; %Placeholder, not used for opts(1) ~= 0
-%load gittins.mat % Load prepopulated Gittins' Index values (beta == 0.95)
 %Calculate derivative of SoC
 if pType == 0
     c = ss_est_gamma;
@@ -129,7 +128,7 @@ distTot = 0; %Initialize total distance traversed between arm selections
 % each transmission.
 
 stationaryB = 0;
-
+epsG = 0.25; %Define epsilon greedy const
 switch(opts(1))
     case {0} %Solution by M. Cheung et al.
         %Initialize Gittins Index history matrix
@@ -141,27 +140,43 @@ switch(opts(1))
         %Evaluate success or failure of decision based on the initial
         %location
         % "Move" agent B prior to transmitting
+        rrVec = zeros(1,armNumA);
         if stationaryB == 0
             % Randomly select index of new location for Agent B
             bLoc = ceil(rand*length(armLocB));
-            rr = pdist([armLocB(bLoc,:);agentA],'euclidean');
+            rrVec = pdist([armLocB(bLoc,:);armLocA],'euclidean');
+            rrVec = rrVec(1:armNumB);
+            %rr = pdist([armLocB(bLoc,:);agentA],'euclidean');
         else
-            rr = pdist([mean(armLocB,1);agentA],'euclidean');
+            rrVec = pdist([mean(armLocB,1);armLocA],'euclidean');
+            rrVec = rrVec(1:armNumB);
+            %rr = pdist([mean(armLocB,1);agentA],'euclidean');
         end
         
-        rA = interp1(xx,c,rr,'linear');
-        
-        mark = envReward(rA,opts(3),opts(4));
-        thetaAvg = mark;
-        sigmaSq = 0;
+        %mark = envReward(rA,opts(3),opts(4));
+        %Prime first location with mean and standard dev. for current loc.
+        initStatVec = zeros(armNumA,100);
+        thetaAvgVec = zeros(armNumA,1);
+        sigmaAvgVec = zeros(armNumA,1);
+        for aa = 1:armNumA
+            for dd = 1:100
+                rA = interp1(xx,c,rrVec(aa),'linear');
+                initStatVec(aa,dd) = envReward(rA,opts(3),opts(4));
+            end
+        end
+        thetaAvgVec = mean(initStatVec,2);
+        sigmaSqVec = (std(initStatVec,0,2)).^2;
+
         ni = 1;
-        v = thetaAvg + sqrt(sigmaSq)*gittinsExp(ni);
-        gittinsVec(initAgentId,:) = [thetaAvg sigmaSq ni v gittinsVec(initAgentId,5)];
+        v = thetaAvgVec(initAgentId) + sqrt(sigmaSqVec(initAgentId))*gittinsExp(ni);
+        gittinsVec(initAgentId,:) = [thetaAvgVec(initAgentId) sigmaSqVec(initAgentId) ni v gittinsVec(initAgentId,5)];
+        gittinsVec(:,1:2) = [thetaAvgVec sigmaSqVec];
         gittinsMat(:,:,1) = gittinsVec;
         bestV = initAgentId; %Initialize bestV, the index associated with the best arm selection
+        mark = envReward(rrVec(initAgentId),opts(3),opts(4));
         
         %Initial save of [x-best y-best separation-best success/failure]
-        bestArmHistory(1,:) = [agentA rA rr mark];        
+        bestArmHistory(1,:) = [agentA interp1(xx,c,rrVec(initAgentId),'linear') rrVec(initAgentId) mark];        
         
         for t = 2:opts(2) %Start at t=2 to indicate the real first "choice"
                           %of an arm is at the next decision epoch
@@ -262,8 +277,116 @@ switch(opts(1))
 %                waitbar(t/opts(2));
         end
         
-     case {2} %Epsilon Greedy
-        epsG = 0.25; %Define epsilon greedy const
+%      case {2} %Epsilon Greedy
+%         %Initialize Gittins Index history matrix
+%         gittinsMat = zeros(armNumA, 5,opts(2)); %E.G. [N x 5 x Epochs]
+% %        h = waitbar(0,'Please wait...running through intelligent iterations');
+%         initAgentId = ceil(armNumA*rand);
+%         agentA = armLocA(initAgentId,:); %Initialize current location of Agent A
+%         agentId(1) = initAgentId;
+%         %Evaluate success or failure of decision based on the initial
+%         %location
+%         % "Move" agent B prior to transmitting
+%         if stationaryB == 0
+%             % Randomly select index of new location for Agent B
+%             bLoc = ceil(rand*length(armLocB));
+%             rr = pdist([armLocB(bLoc,:);agentA],'euclidean');
+%         else
+%             rr = pdist([mean(armLocB,1);agentA],'euclidean');
+%         end
+%         
+%         rA = interp1(xx,c,rr,'linear');
+%         
+%         mark = envReward(rA,opts(3),opts(4));
+%         thetaAvg = mark;
+%         sigmaSq = 0;
+%         ni = 1;
+%         v = thetaAvg + sqrt(sigmaSq)*gittinsExp(ni);
+%         gittinsVec(initAgentId,:) = [thetaAvg sigmaSq ni v gittinsVec(initAgentId,5)];
+%         gittinsMat(:,:,1) = gittinsVec;
+%         bestV = initAgentId; %Initialize bestV, the index associated with the best arm selection
+%         
+%         %Initial save of [x-best y-best separation-best success/failure]
+%         bestArmHistory(1,:) = [agentA rA rr mark];        
+%         
+%         for t = 2:opts(2) %Start at t=2 to indicate the real first "choice"
+%                           %of an arm is at the next decision epoch
+%             gittinsMat(:,:,t) = gittinsVec;
+%             %Determine AgentA's next location for reception by calculating
+%             %Gittins Indices usings Equ. 2.13 from M.  Cheung MS Thesis
+%             %(2013)
+%                 
+%             for a = 1:armNumA
+%                 if (a == bestV) %If recently selected arm is being evaluated (i.e. played) 
+%                     ni = gittinsVec(a,3) + 1; %Update total arm pulls
+%                     thetaAvg = ((ni-1)/(ni))*gittinsVec(a,1) + (1/ni)*mark;
+%                     if ni >= 2
+%                         sigmaSq = ((ni-2)/(ni-1))*sqrt(gittinsVec(a,2)) + (1/ni)*(mark-gittinsVec(a,1))^2;
+%                     else
+%                         sigmaSq = gittinsVec(a,2);
+%                     end
+%                 else
+%                     thetaAvg = gittinsVec(a,1);
+%                     sigmaSq = gittinsVec(a,2);
+%                     ni = gittinsVec(a,3); %No change in arm pull
+%                 end
+% 
+%                 v = thetaAvg + sqrt(sigmaSq)*gittinsExp(t);
+%                 gittinsVec(a,:) = [thetaAvg sigmaSq ni v gittinsVec(a,5)];
+%             end
+%             
+%             %Replicate the evaluation of a "continuation" index before
+%             %calcuating a "decision" index. IF newest GI calculated is LESS
+%             %than the previous BEST, then seek a new BEST, ELSE, CONTINUE
+%             %if (max(gittinsMat(bestV,4,1:t-1)) > gittinsVec(bestV,4)) && (t > 0.1*opts(2))
+%             %08APR17, LTP: Added correction to how "bestV" is indexed
+%             if rand < epsG
+%                 bestV = ceil(armNumA*rand); %Select a random location contrary to the "optimal" choice
+%             else
+%                 bestV = gittinsVec((gittinsVec(:,4) == max(gittinsVec(:,4))),5);
+%             end
+%             %Initially, the calculated Gittins' Indices will be  the same,
+%             %so explore. (Consider the alternative case where you remain
+%             %where you are and look at the differences in output)
+%             %In case there are multiple max Gittins Indices, randomly
+%             %choose one.
+%             %Exploration policy
+%             if length(bestV) > 1
+%                 % % Option 1: Randomly choose
+%                 bestV = ceil(length(bestV)*rand);
+%             end
+%             %end
+%             %Evaluate "continuation" condition
+%             
+%             %Exploitation policy
+%             %bestV = ????
+%             
+%             %Update history of agent (arm) selection
+%             agentAold = agentA;
+%             %Assign newly identified best agent (arm)
+%             agentA = armLocA(bestV,:);
+%             %Record the ID of the best agent (arm)
+%             agentId(t) = bestV;
+%             
+%             %Keep track of total distance traversed.
+%             distTot = distTot + pdist([agentAold;agentA]);
+%             %Evaluate success or failure of decision based on the
+%             %location
+%             if stationaryB == 0
+%                 % Randomly select index of new location for Agent B
+%                 bLoc = ceil(rand*armNumB);
+%                 rr = pdist([armLocB(bLoc,:);agentA],'euclidean');
+%             else
+%                 rr = pdist([mean(armLocB,1);agentA],'euclidean');
+%             end
+%             rA = interp1(xx,c,rr,'linear');            
+%             
+%             mark = envReward(rA,opts(3),opts(4));
+%             %Save [x-best, y-best, SoC(separation-best), separation-best, success/failure]
+%             bestArmHistory(t,:) = [agentA rA rr mark];
+%         end        
+        
+    case{2}
         %Initialize Gittins Index history matrix
         gittinsMat = zeros(armNumA, 5,opts(2)); %E.G. [N x 5 x Epochs]
 %        h = waitbar(0,'Please wait...running through intelligent iterations');
@@ -273,27 +396,43 @@ switch(opts(1))
         %Evaluate success or failure of decision based on the initial
         %location
         % "Move" agent B prior to transmitting
+        rrVec = zeros(1,armNumA);
         if stationaryB == 0
             % Randomly select index of new location for Agent B
             bLoc = ceil(rand*length(armLocB));
-            rr = pdist([armLocB(bLoc,:);agentA],'euclidean');
+            rrVec = pdist([armLocB(bLoc,:);armLocA],'euclidean');
+            rrVec = rrVec(1:armNumB);
+            %rr = pdist([armLocB(bLoc,:);agentA],'euclidean');
         else
-            rr = pdist([mean(armLocB,1);agentA],'euclidean');
+            rrVec = pdist([mean(armLocB,1);armLocA],'euclidean');
+            rrVec = rrVec(1:armNumB);
+            %rr = pdist([mean(armLocB,1);agentA],'euclidean');
         end
         
-        rA = interp1(xx,c,rr,'linear');
-        
-        mark = envReward(rA,opts(3),opts(4));
-        thetaAvg = mark;
-        sigmaSq = 0;
+        %mark = envReward(rA,opts(3),opts(4));
+        %Prime first location with mean and standard dev. for current loc.
+        initStatVec = zeros(armNumA,100);
+        thetaAvgVec = zeros(armNumA,1);
+        sigmaAvgVec = zeros(armNumA,1);
+        for aa = 1:armNumA
+            for dd = 1:100
+                rA = interp1(xx,c,rrVec(aa),'linear');
+                initStatVec(aa,dd) = envReward(rA,opts(3),opts(4));
+            end
+        end
+        thetaAvgVec = mean(initStatVec,2);
+        sigmaSqVec = (std(initStatVec,0,2)).^2;
+
         ni = 1;
-        v = thetaAvg + sqrt(sigmaSq)*gittinsExp(ni);
-        gittinsVec(initAgentId,:) = [thetaAvg sigmaSq ni v gittinsVec(initAgentId,5)];
+        v = thetaAvgVec(initAgentId) + sqrt(sigmaSqVec(initAgentId))*gittinsExp(ni);
+        gittinsVec(initAgentId,:) = [thetaAvgVec(initAgentId) sigmaSqVec(initAgentId) ni v gittinsVec(initAgentId,5)];
+        gittinsVec(:,1:2) = [thetaAvgVec sigmaSqVec];
         gittinsMat(:,:,1) = gittinsVec;
         bestV = initAgentId; %Initialize bestV, the index associated with the best arm selection
+        mark = envReward(rrVec(initAgentId),opts(3),opts(4));
         
         %Initial save of [x-best y-best separation-best success/failure]
-        bestArmHistory(1,:) = [agentA rA rr mark];        
+        bestArmHistory(1,:) = [agentA interp1(xx,c,rrVec(initAgentId),'linear') rrVec(initAgentId) mark];        
         
         for t = 2:opts(2) %Start at t=2 to indicate the real first "choice"
                           %of an arm is at the next decision epoch
@@ -341,12 +480,7 @@ switch(opts(1))
                 % % Option 1: Randomly choose
                 bestV = ceil(length(bestV)*rand);
             end
-            %end
-            %Evaluate "continuation" condition
-            
-            %Exploitation policy
-            %bestV = ????
-            
+           
             %Update history of agent (arm) selection
             agentAold = agentA;
             %Assign newly identified best agent (arm)
@@ -358,20 +492,19 @@ switch(opts(1))
             distTot = distTot + pdist([agentAold;agentA]);
             %Evaluate success or failure of decision based on the
             %location
-            if stationaryB == 0
-                % Randomly select index of new location for Agent B
-                bLoc = ceil(rand*armNumB);
-                rr = pdist([armLocB(bLoc,:);agentA],'euclidean');
-            else
-                rr = pdist([mean(armLocB,1);agentA],'euclidean');
-            end
-            rA = interp1(xx,c,rr,'linear');            
+                if stationaryB == 0
+                    % Randomly select index of new location for Agent B
+                    bLoc = ceil(rand*armNumB);
+                    rr = pdist([armLocB(bLoc,:);agentA],'euclidean');
+                else
+                    rr = pdist([mean(armLocB,1);agentA],'euclidean');
+                end
+                    rA = interp1(xx,c,rr,'linear');            
             
             mark = envReward(rA,opts(3),opts(4));
             %Save [x-best, y-best, SoC(separation-best), separation-best, success/failure]
             bestArmHistory(t,:) = [agentA rA rr mark];
         end        
-        
         
     otherwise
         disp{'Unknown selection'}
