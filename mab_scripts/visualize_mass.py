@@ -32,9 +32,9 @@ distT = 0    #Distribution type (Uniform Random - 0, Mesh grid - 1)
 #Define parameters of interest
 bC = 2       #Number of Bernoulli trials considered (1 - 1of1, 2 - 1of5, 3 - 1of10)
 soc_type = 1 #Type of Success of Communication curve (0 - Gamma, 1 - Exponential)
-nIter = 100  #Number of iterations (timesteps or duration, 100, 500, or 1000)
+nIter = 500  #Number of iterations (timesteps or duration, 100, 500, or 1000)
 scl = 1   #Scale factor for plotting (1 - 100, 0.05 - 500, 0.001 - 1000)
-soln = 2     #Solution of interest (Gittins Index, GI - 0, Uninformed Random, UR - 1; Educated Guess, EG - 2)
+soln = 0     #Solution of interest (Gittins Index, GI - 0, Uninformed Random, UR - 1; Educated Guess, EG - 2)
 
 
 #STEP 2: Read in and visualize MAB data
@@ -77,7 +77,6 @@ trialTotal = candLoc.loc[:,'trials'].astype(int).sum(axis=0)
 print("%% Success: %6.2f --- Distance: %7.2f\n"% ((100*successTotal/trialTotal), dataParse.loc[1,'dist_tot'] ))
 
 
-'''
 # Just a figure and one subplot
 f, (ax1, ax2, ax3) = plt.subplots(3, 1)
 #font = {'family' : 'normal',
@@ -100,15 +99,15 @@ ind = np.arange(1,N+1)    # The x-axis for the locations considered
 width = 0.35 #Width of bar plot
 good = candLoc.loc[:,'success'].astype(int)
 bad = candLoc.loc[:,'trials'].astype(int) - candLoc.loc[:,'success'].astype(int)
-p2 = ax1.bar(ind, bad, width, color='r', align='center')
-p3 = ax1.bar(ind, good, width, color='b', align='center')
+p2 = ax1.bar(ind, good, width, color='b', align='center')
+p3 = ax1.bar(ind, bad, width, bottom=good, color='r', align='center')
 ax1.set_xlabel('Candidate Receive Locations', multialignment='center', fontsize=14)
 ax1.set_ylabel('Transmissions', multialignment='center', fontsize=14)
 ax1.set_title('Projected Acomms Success/Failures', fontsize=14, fontweight='bold')
 ax1.set_xticks(ind)
 ax1.set_yticks(np.arange(0, max(candLoc['success']), max(candLoc['success'])/scl))
 #ax1.set_yticks(np.arange(0, 600, 10))
-ax1.legend((p2[0], p3[0]), ('Failure', 'Success'))
+ax1.legend((p2[0], p3[0]), ('Success','Failure'))
 
 #Plot RHS plot reflecting spatial distribution of trials across locations
 colors = candLoc['success']/nIter #Scale by 
@@ -127,4 +126,3 @@ ax3 = plt.hist(dataParse['rng'],bins=60)
 f.savefig('CMP_27MAR17_PKR.png', bbox_inches='tight')  
 f.show()
 #plt.show()
-'''
